@@ -8,12 +8,15 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from nexus.api.main import app
+from nexus.config import get_settings
 from nexus.database import Base, get_db
 
-# Test database URL
-TEST_DATABASE_URL = (
-    "postgresql+asyncpg://nexus_user:changeme_strong_password@localhost:5432/nexus_test"
-)
+# Use same settings as the application (reads from env vars)
+_settings = get_settings()
+TEST_DATABASE_URL = _settings.database_url
+
+# Override database name for tests
+TEST_DATABASE_URL = TEST_DATABASE_URL.rsplit("/", 1)[0] + "/nexus_test"
 
 
 @pytest.fixture(scope="session")
