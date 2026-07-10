@@ -1,12 +1,13 @@
 """FastAPI application entry point."""
 
+from contextlib import asynccontextmanager
+
+import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
-import structlog
 
 from nexus.config import get_settings
-from nexus.database import engine, Base
+from nexus.database import Base, engine
 
 settings = get_settings()
 logger = structlog.get_logger()
@@ -17,14 +18,14 @@ async def lifespan(app: FastAPI):
     """Application lifespan: startup and shutdown events."""
     # Startup
     logger.info("nexus_startup", env=settings.nexus_env)
-    
+
     # Create database tables (in production, use Alembic migrations instead)
     if settings.nexus_env == "development":
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-    
+
     yield
-    
+
     # Shutdown
     logger.info("nexus_shutdown")
     await engine.dispose()
@@ -53,21 +54,14 @@ app.add_middleware(
 @app.get("/")
 async def root():
     """Root endpoint."""
-    return {
-        "service": "Nexus Personal AI System",
-        "version": "0.1.0",
-        "status": "operational"
-    }
+    return {"service": "Nexus Personal AI System", "version": "0.1.0", "status": "operational"}
 
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint for monitoring."""
     # TODO: Add database connectivity check
-    return {
-        "status": "healthy",
-        "env": settings.nexus_env
-    }
+    return {"status": "healthy", "env": settings.nexus_env}
 
 
 # Import and include routers

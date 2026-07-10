@@ -81,6 +81,8 @@ jobs:
           NEXUS_DB_NAME: nexus_test
           NEXUS_DB_USER: nexus_user
           NEXUS_DB_PASSWORD: test_password
+          NEXUS_SECRET_KEY: ci-test-secret-key-change-in-production
+          NEXUS_ENCRYPTION_KEY: YnV0dGVyZmx5IS1maXgtbWUtc2VjcmV0LWtleS1mb3ItY2ktdGVzdHM=
           REDIS_HOST: localhost
           REDIS_PORT: 6379
         run: |

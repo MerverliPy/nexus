@@ -54,7 +54,11 @@ def task_add(title: str, due: str, priority: int):
 
 
 @task.command("list")
-@click.option("--status", type=click.Choice(["pending", "in_progress", "completed", "cancelled"]), default="pending")
+@click.option(
+    "--status",
+    type=click.Choice(["pending", "in_progress", "completed", "cancelled"]),
+    default="pending",
+)
 def task_list(status: str):
     """List tasks."""
     # TODO: Implement task listing
