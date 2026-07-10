@@ -69,7 +69,7 @@ class Transaction(BaseModel):
     transaction_date = Column(Date, nullable=False, index=True)
     is_verified = Column(Boolean, default=False, nullable=False)
     receipt_url = Column(String(500), nullable=True)
-    metadata = Column(JSON, nullable=True)  # OCR output, original bank description, etc.
+    raw_data = Column(JSON, nullable=True)  # OCR output, original bank description, etc.
 
     # Relationships
     user = relationship("User", back_populates="transactions")
