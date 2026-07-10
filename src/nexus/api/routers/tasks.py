@@ -1,7 +1,6 @@
 """Tasks router — CRUD for user tasks."""
 
 from datetime import datetime
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
@@ -21,29 +20,29 @@ router = APIRouter(prefix="/api/v1/tasks", tags=["tasks"])
 
 class TaskCreate(BaseModel):
     title: str
-    description: Optional[str] = None
+    description: str | None = None
     priority: int = 0
-    due_date: Optional[datetime] = None
-    recurrence_rule: Optional[str] = None
+    due_date: datetime | None = None
+    recurrence_rule: str | None = None
 
 
 class TaskUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    status: Optional[str] = None
-    priority: Optional[int] = None
-    due_date: Optional[datetime] = None
-    recurrence_rule: Optional[str] = None
+    title: str | None = None
+    description: str | None = None
+    status: str | None = None
+    priority: int | None = None
+    due_date: datetime | None = None
+    recurrence_rule: str | None = None
 
 
 class TaskResponse(BaseModel):
     id: int
     title: str
-    description: Optional[str] = None
+    description: str | None = None
     status: str
     priority: int
-    due_date: Optional[datetime] = None
-    recurrence_rule: Optional[str] = None
+    due_date: datetime | None = None
+    recurrence_rule: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -77,8 +76,8 @@ async def create_task(
 
 @router.get("", response_model=list[TaskResponse])
 async def list_tasks(
-    status_filter: Optional[str] = Query(None, alias="status"),
-    priority_min: Optional[int] = Query(None, alias="priority_min"),
+    status_filter: str | None = Query(None, alias="status"),
+    priority_min: int | None = Query(None, alias="priority_min"),
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):

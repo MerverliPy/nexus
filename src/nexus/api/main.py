@@ -6,6 +6,7 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from nexus.api.routers import auth, tasks
 from nexus.config import get_settings
 from nexus.database import Base, engine
 
@@ -64,7 +65,5 @@ async def health_check():
     return {"status": "healthy", "env": settings.nexus_env}
 
 
-# Import and include routers
-from nexus.api.routers import auth, tasks
 app.include_router(auth.router)
 app.include_router(tasks.router)

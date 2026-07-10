@@ -2,9 +2,8 @@
 
 import json
 import os
-from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 
@@ -35,12 +34,12 @@ def _save_tokens(data: dict) -> None:
     TOKEN_FILE.write_text(json.dumps(data, indent=2))
 
 
-def _get_access_token() -> Optional[str]:
+def _get_access_token() -> str | None:
     tokens = _load_tokens()
     return tokens.get("access_token")
 
 
-def _get_refresh_token() -> Optional[str]:
+def _get_refresh_token() -> str | None:
     tokens = _load_tokens()
     return tokens.get("refresh_token")
 

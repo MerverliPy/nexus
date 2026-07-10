@@ -222,7 +222,7 @@ def status():
     console.print(f"  Auth:    [green]{'Logged in' if api.logged_in() else 'Not logged in'}[/green]")
     console.print(f"  Env:     {settings.nexus_env}")
     console.print(f"  Debug:   {settings.nexus_debug}")
-    console.print(f"  Version: 0.1.0")
+    console.print("  Version: 0.1.0")
 
 
 if __name__ == "__main__":
