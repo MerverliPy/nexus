@@ -65,9 +65,6 @@ async def health_check():
 
 
 # Import and include routers
-# from nexus.api.routers import auth, tasks, finance, research, automations
-# app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
-# app.include_router(tasks.router, prefix="/api/v1/tasks", tags=["tasks"])
-# app.include_router(finance.router, prefix="/api/v1/finance", tags=["finance"])
-# app.include_router(research.router, prefix="/api/v1/research", tags=["research"])
-# app.include_router(automations.router, prefix="/api/v1/automations", tags=["automations"])
+from nexus.api.routers import auth, tasks
+app.include_router(auth.router)
+app.include_router(tasks.router)

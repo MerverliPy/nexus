@@ -7,8 +7,21 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
 # Import models to ensure metadata is populated
-from nexus.models import Base
+from nexus.database import Base
 from nexus.config import get_settings
+
+# Import models to ensure they are registered in Base.metadata
+from nexus.models import (  # noqa: F401
+    User,
+    Task,
+    Account,
+    Transaction,
+    ResearchProject,
+    Note,
+    NoteLink,
+    Automation,
+    AuditLog,
+)
 
 # this is the Alembic Config object
 config = context.config
