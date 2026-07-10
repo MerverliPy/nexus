@@ -1,0 +1,152 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nexus"
+version = "0.1.0"
+description = "Personal AI System for tasks, finance, and research"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Calvin", email = "calvinbrady8@gmail.com"}
+]
+keywords = ["ai", "personal-assistant", "finance", "research", "automation"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    # Web framework
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.27.0",
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.1.0",
+    "python-multipart>=0.0.9",
+    
+    # Database
+    "sqlalchemy>=2.0.25",
+    "alembic>=1.13.1",
+    "asyncpg>=0.29.0",
+    "pgvector>=0.2.4",
+    "psycopg2-binary>=2.9.9",
+    
+    # Cache & Queue
+    "redis>=5.0.1",
+    "celery>=5.3.6",
+    
+    # Auth & Security
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[argon2]>=1.7.4",
+    "pyotp>=2.9.0",
+    "qrcode[pil]>=7.4.2",
+    "cryptography>=42.0.2",
+    "sqlalchemy-utils>=0.41.1",
+    
+    # HTTP & APIs
+    "httpx>=0.26.0",
+    "tenacity>=8.2.3",
+    "circuitbreaker>=1.4.0",
+    
+    # CLI
+    "click>=8.1.7",
+    "rich>=13.7.0",
+    
+    # Logging & Monitoring
+    "structlog>=24.1.0",
+    "prometheus-client>=0.19.0",
+    
+    # Utilities
+    "python-dateutil>=2.8.2",
+    "python-frontmatter>=1.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.4",
+    "pytest-cov>=4.1.0",
+    "pytest-httpx>=0.28.0",
+    "mypy>=1.8.0",
+    "ruff>=0.2.0",
+    "black>=24.1.0",
+]
+
+ml = [
+    "scikit-learn>=1.4.0",
+    "sentence-transformers>=2.3.1",
+]
+
+ocr = [
+    "pytesseract>=0.3.10",
+    "Pillow>=10.2.0",
+    "opencv-python>=4.9.0.80",
+]
+
+[project.scripts]
+nexus = "nexus.cli.main:cli"
+
+[project.urls]
+Homepage = "https://github.com/calvin/nexus"
+Documentation = "https://github.com/calvin/nexus/docs"
+Repository = "https://github.com/calvin/nexus"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--cov=nexus",
+    "--cov-report=term-missing",
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = [
+    "celery.*",
+    "redis.*",
+    "sqlalchemy_utils.*",
+]
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+    "B008",  # do not perform function calls in argument defaults
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]  # Allow unused imports in __init__.py
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
