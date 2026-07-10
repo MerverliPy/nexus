@@ -157,11 +157,29 @@ def get_me() -> dict:
 # ── Task Commands ──────────────────────────────────────────────────────
 
 
-def create_task(title: str, description: str | None = None, priority: int = 0) -> dict:
+def create_task(
+    title: str,
+    description: str | None = None,
+    priority: int = 0,
+    due_date: str | None = None,
+    recurrence_rule: str | None = None,
+) -> dict:
     """Create a new task."""
     body: dict = {"title": title, "priority": priority}
     if description:
         body["description"] = description
+    if recurrence_rule:
+        body["recurrence_rule"] = recurrence_rule
+    if due_date:
+        # Try natural language parsing
+        from nexus.utils.dates import parse_natural_date
+
+        parsed = parse_natural_date(due_date)
+        if parsed:
+            body["due_date"] = parsed.isoformat()
+        else:
+            # Fallback: send raw string and let the API handle it
+            body["due_date"] = due_date
     resp = _request("POST", "/api/v1/tasks", json_body=body)
     if resp.status_code == 201:
         return resp.json()

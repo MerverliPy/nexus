@@ -29,6 +29,8 @@ dependencies = [
     "pydantic-settings>=2.1.0",
     "email-validator>=2.0.0",
     "python-multipart>=0.0.9",
+    "dateparser>=1.2.0",
+    "parsedatetime>=2.6",
     
     # Database
     "sqlalchemy>=2.0.25",

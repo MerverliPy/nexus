@@ -11,6 +11,8 @@ from nexus.database import get_db
 from nexus.models.task import Task
 from nexus.models.user import User
 from nexus.utils.dependencies import get_current_user
+from nexus.api.ws_manager import manager
+from nexus.utils.recurrence import next_occurrence
 
 router = APIRouter(prefix="/api/v1/tasks", tags=["tasks"])
 
@@ -71,6 +73,8 @@ async def create_task(
     db.add(task)
     await db.flush()
     await db.refresh(task)
+    task_data = TaskResponse.model_validate(task).model_dump(mode="json")
+    await manager.broadcast(user.id, "task_created", task_data)
     return task
 
 
@@ -127,6 +131,8 @@ async def update_task(
 
     await db.flush()
     await db.refresh(task)
+    task_data = TaskResponse.model_validate(task).model_dump(mode="json")
+    await manager.broadcast(user.id, "task_updated", task_data)
     return task
 
 
@@ -144,6 +150,8 @@ async def delete_task(
 
     await db.delete(task)
     await db.flush()
+    task_data = {"id": task_id}
+    await manager.broadcast(user.id, "task_deleted", task_data)
 
 
 @router.patch("/{task_id}/complete", response_model=TaskResponse)
@@ -161,4 +169,26 @@ async def complete_task(
     task.status = "completed"
     await db.flush()
     await db.refresh(task)
+    task_data = TaskResponse.model_validate(task).model_dump(mode="json")
+    await manager.broadcast(user.id, "task_updated", task_data)
+
+    # If task has a recurrence rule, generate the next instance
+    if task.recurrence_rule:
+        next_due = next_occurrence(task.recurrence_rule, after=task.due_date or datetime.utcnow())
+        if next_due:
+            new_task = Task(
+                user_id=user.id,
+                title=task.title,
+                description=task.description,
+                priority=task.priority,
+                due_date=next_due,
+                recurrence_rule=task.recurrence_rule,
+                status="pending",
+            )
+            db.add(new_task)
+            await db.flush()
+            await db.refresh(new_task)
+            new_task_data = TaskResponse.model_validate(new_task).model_dump(mode="json")
+            await manager.broadcast(user.id, "task_created", new_task_data)
+
     return task

@@ -100,17 +100,22 @@ def task():
 @click.argument("title")
 @click.option("--desc", help="Task description")
 @click.option("--priority", type=int, default=0, help="Priority (0=normal, 1=high)")
-def task_add(title: str, desc: str | None, priority: int):
+@click.option("--due", help="Due date (natural language: 'tomorrow', 'next monday', etc.)")
+@click.option("--recur", help="Recurrence rule (RRULE format: 'FREQ=WEEKLY;BYDAY=MO')")
+def task_add(title: str, desc: str | None, priority: int, due: str | None, recur: str | None):
     """Create a new task."""
     if not api.logged_in():
         console.print("[red]Not logged in. Run 'nexus auth login' first.[/red]")
         sys.exit(1)
     try:
-        t = api.create_task(title, description=desc, priority=priority)
-        console.print(
-            f"[green]Created task #{t['id']}:[/green] {t['title']} "
-            f"(priority {t['priority']}, status: {t['status']})"
-        )
+        t = api.create_task(title, description=desc, priority=priority, due_date=due, recurrence_rule=recur)
+        parts = [f"[green]Created task #{t['id']}:[/green] {t['title']} (priority {t['priority']}, status: {t['status']})"]
+        if t.get("due_date"):
+            parts.append(f"due {t['due_date'][:10]}")
+        if t.get("recurrence_rule"):
+            from nexus.utils.recurrence import rrule_description
+            parts.append(f"recurring: {rrule_description(t['recurrence_rule'])}")
+        console.print(" ".join(parts))
     except APIError as e:
         console.print(f"[red]{e.detail}[/red]")
         sys.exit(1)
