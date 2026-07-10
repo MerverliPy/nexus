@@ -1,6 +1,7 @@
 """Test database models."""
 
 import pytest
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from nexus.models.task import Task
@@ -52,7 +53,7 @@ async def test_user_task_relationship(db_session: AsyncSession, test_user: User)
     db_session.add_all([task1, task2])
     await db_session.flush()
 
-    # Refresh to load relationships
-    await db_session.refresh(test_user)
-
-    assert len(test_user.tasks) == 2
+    # Query tasks directly (async safe — avoids MissingGreenlet on lazy loads)
+    result = await db_session.execute(select(Task).where(Task.user_id == test_user.id))
+    tasks = result.scalars().all()
+    assert len(tasks) == 2
