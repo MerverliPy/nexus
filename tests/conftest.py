@@ -1,12 +1,12 @@
 """Pytest configuration and fixtures."""
 
-import asyncio
 from collections.abc import AsyncGenerator
 
 import pytest
 import sqlalchemy as sa
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 
 from nexus.api.main import app
 from nexus.config import get_settings
@@ -21,17 +21,11 @@ TEST_DATABASE_URL = TEST_DATABASE_URL.rsplit("/", 1)[0] + "/nexus_test"
 
 
 @pytest.fixture(scope="session")
-def event_loop():
-    """Create event loop for async tests."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest.fixture(scope="session")
 async def engine():
     """Create test database engine."""
-    engine = create_async_engine(TEST_DATABASE_URL, echo=False)
+    engine = create_async_engine(
+        TEST_DATABASE_URL, echo=False, poolclass=NullPool, pool_pre_ping=True
+    )
 
     # Create the vector extension and tables
     async with engine.begin() as conn:
