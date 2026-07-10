@@ -99,9 +99,7 @@ def task():
 @task.command("add")
 @click.argument("title")
 @click.option("--desc", help="Task description")
-@click.option(
-    "--priority", type=int, default=0, help="Priority (0=normal, 1=high)"
-)
+@click.option("--priority", type=int, default=0, help="Priority (0=normal, 1=high)")
 def task_add(title: str, desc: str | None, priority: int):
     """Create a new task."""
     if not api.logged_in():
@@ -219,7 +217,9 @@ def status():
     settings = get_settings()
     console.print("[bold]Nexus System Status[/bold]")
     console.print(f"  API:     [green]{settings.database_url}[/green]")
-    console.print(f"  Auth:    [green]{'Logged in' if api.logged_in() else 'Not logged in'}[/green]")
+    console.print(
+        f"  Auth:    [green]{'Logged in' if api.logged_in() else 'Not logged in'}[/green]"
+    )
     console.print(f"  Env:     {settings.nexus_env}")
     console.print(f"  Debug:   {settings.nexus_debug}")
     console.print("  Version: 0.1.0")

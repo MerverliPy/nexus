@@ -26,7 +26,9 @@ def hash_password(password: str) -> str:
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
     """Create a short-lived JWT access token."""
     to_encode = data.copy()
-    expire = datetime.now(UTC) + (expires_delta or timedelta(minutes=settings.nexus_access_token_expire_minutes))
+    expire = datetime.now(UTC) + (
+        expires_delta or timedelta(minutes=settings.nexus_access_token_expire_minutes)
+    )
     to_encode.update({"exp": expire, "type": "access"})
     return jwt.encode(to_encode, settings.nexus_secret_key, algorithm="HS256")
 

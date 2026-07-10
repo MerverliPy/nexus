@@ -95,18 +95,14 @@ def _request(
             headers["Authorization"] = f"Bearer {token}"
 
     url = f"{_get_base_url()}{path}"
-    resp = httpx.request(
-        method, url, headers=headers, json=json_body, timeout=15
-    )
+    resp = httpx.request(method, url, headers=headers, json=json_body, timeout=15)
 
     # If 401 and we have a refresh token, try refreshing once
     if resp.status_code == 401 and auth:
         if _try_refresh():
             token = _get_access_token()
             headers["Authorization"] = f"Bearer {token}"
-            resp = httpx.request(
-                method, url, headers=headers, json=json_body, timeout=15
-            )
+            resp = httpx.request(method, url, headers=headers, json=json_body, timeout=15)
 
     return resp
 
@@ -116,10 +112,15 @@ def _request(
 
 def register(email: str, password: str) -> dict:
     """Register a new user and store tokens."""
-    resp = _request("POST", "/api/v1/auth/register", auth=False, json_body={
-        "email": email,
-        "password": password,
-    })
+    resp = _request(
+        "POST",
+        "/api/v1/auth/register",
+        auth=False,
+        json_body={
+            "email": email,
+            "password": password,
+        },
+    )
     if resp.status_code == 201:
         data = resp.json()
         _update_tokens(data["access_token"], data["refresh_token"])
@@ -129,10 +130,15 @@ def register(email: str, password: str) -> dict:
 
 def login(email: str, password: str) -> dict:
     """Login and store tokens."""
-    resp = _request("POST", "/api/v1/auth/login", auth=False, json_body={
-        "email": email,
-        "password": password,
-    })
+    resp = _request(
+        "POST",
+        "/api/v1/auth/login",
+        auth=False,
+        json_body={
+            "email": email,
+            "password": password,
+        },
+    )
     if resp.status_code == 200:
         data = resp.json()
         _update_tokens(data["access_token"], data["refresh_token"])

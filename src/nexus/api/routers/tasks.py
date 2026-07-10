@@ -101,9 +101,7 @@ async def get_task(
     db: AsyncSession = Depends(get_db),
 ):
     """Get a single task by ID."""
-    result = await db.execute(
-        select(Task).where(Task.id == task_id, Task.user_id == user.id)
-    )
+    result = await db.execute(select(Task).where(Task.id == task_id, Task.user_id == user.id))
     task = result.scalar_one_or_none()
     if task is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
@@ -118,9 +116,7 @@ async def update_task(
     db: AsyncSession = Depends(get_db),
 ):
     """Update a task (partial update)."""
-    result = await db.execute(
-        select(Task).where(Task.id == task_id, Task.user_id == user.id)
-    )
+    result = await db.execute(select(Task).where(Task.id == task_id, Task.user_id == user.id))
     task = result.scalar_one_or_none()
     if task is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
@@ -141,9 +137,7 @@ async def delete_task(
     db: AsyncSession = Depends(get_db),
 ):
     """Delete a task."""
-    result = await db.execute(
-        select(Task).where(Task.id == task_id, Task.user_id == user.id)
-    )
+    result = await db.execute(select(Task).where(Task.id == task_id, Task.user_id == user.id))
     task = result.scalar_one_or_none()
     if task is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
@@ -159,9 +153,7 @@ async def complete_task(
     db: AsyncSession = Depends(get_db),
 ):
     """Mark a task as completed."""
-    result = await db.execute(
-        select(Task).where(Task.id == task_id, Task.user_id == user.id)
-    )
+    result = await db.execute(select(Task).where(Task.id == task_id, Task.user_id == user.id))
     task = result.scalar_one_or_none()
     if task is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
