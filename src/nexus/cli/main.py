@@ -174,17 +174,164 @@ def finance():
 @click.argument("amount", type=float)
 @click.argument("vendor")
 @click.option("--category", help="Transaction category")
-@click.option("--account", help="Account name")
-def finance_log(amount: float, vendor: str, category: str, account: str):
+@click.option("--account-id", type=int, help="Account ID")
+@click.option("--desc", help="Transaction description")
+@click.option("--date", help="Transaction date (natural language)")
+def finance_log(amount: float, vendor: str, category: str, account_id: int, desc: str, date: str):
     """Log a transaction."""
-    console.print("[yellow]TODO: Log transaction (coming in Phase 2)[/yellow]")
+    if not api.logged_in():
+        console.print("[red]Not logged in. Run 'nexus auth login' first.[/red]")
+        sys.exit(1)
+    try:
+        tx = api.create_transaction(
+            amount=amount,
+            vendor=vendor,
+            category=category,
+            account_id=account_id,
+            description=desc,
+            date_str=date,
+        )
+        color = "red" if amount > 0 else "green"
+        sign = "-" if amount > 0 else "+"
+        amt = float(tx["amount"])
+        console.print(
+            f"[{color}]Logged:[/{color}] {tx['vendor']} "
+            f"[bold]{sign}\${amt:.2f}[/bold] "
+            f"({tx.get('category') or 'uncategorized'})"
+        )
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
 
 
 @finance.command("list")
-@click.option("--month", help="Month (YYYY-MM)")
-def finance_list(month: str):
+@click.option("--category", help="Filter by category")
+@click.option("--vendor", help="Filter by vendor")
+@click.option("--month", help="Month filter (YYYY-MM)")
+@click.option("--limit", type=int, default=20, help="Max results")
+def finance_list(category: str, vendor: str, month: str, limit: int):
     """List transactions."""
-    console.print("[yellow]TODO: List transactions (coming in Phase 2)[/yellow]")
+    if not api.logged_in():
+        console.print("[red]Not logged in. Run 'nexus auth login' first.[/red]")
+        sys.exit(1)
+    try:
+        date_from = None
+        date_to = None
+        if month:
+            date_from = f"{month}-01"
+            # Calculate end of month
+            from datetime import datetime
+            from calendar import monthrange
+            y, m = map(int, month.split("-"))
+            _, last_day = monthrange(y, m)
+            date_to = f"{month}-{last_day}"
+
+        txs = api.list_transactions(
+            category=category, vendor=vendor, date_from=date_from, date_to=date_to, limit=limit
+        )
+
+        if not txs:
+            console.print("[dim]No transactions found.[/dim]")
+            return
+
+        table = Table(title=f"Transactions ({len(txs)})")
+        table.add_column("ID", style="cyan", no_wrap=True)
+        table.add_column("Date")
+        table.add_column("Vendor", style="white")
+        table.add_column("Amount", justify="right")
+        table.add_column("Category")
+
+        total = 0
+        for tx in txs:
+            amt = float(tx["amount"])
+            total += amt
+            color = "red" if amt > 0 else "green"
+            sign = "-" if amt > 0 else "+"
+            table.add_row(
+                str(tx["id"]),
+                tx["transaction_date"],
+                tx.get("vendor") or "[dim]—[/dim]",
+                f"[{color}]{sign}\${abs(amt):.2f}[/{color}]",
+                tx.get("category") or "[dim]—[/dim]",
+            )
+
+        console.print(table)
+        console.print(f"[bold]Total expenses:[/bold] \${total:.2f}")
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
+
+
+@finance.command("accounts")
+def finance_accounts():
+    """List all accounts."""
+    if not api.logged_in():
+        console.print("[red]Not logged in. Run 'nexus auth login' first.[/red]")
+        sys.exit(1)
+    try:
+        accounts = api.list_accounts()
+        if not accounts:
+            console.print("[dim]No accounts found. Create one with 'nexus finance add-account'[/dim]")
+            return
+        table = Table(title="Accounts")
+        table.add_column("ID", style="cyan")
+        table.add_column("Name", style="white")
+        table.add_column("Type")
+        table.add_column("Balance", justify="right")
+        table.add_column("Institution")
+        for a in accounts:
+            bal = float(a["balance"])
+            color = "green" if bal >= 0 else "red"
+            table.add_row(
+                str(a["id"]),
+                a["name"],
+                a["account_type"],
+                f"[{color}]\${bal:.2f}[/{color}]",
+                a.get("institution") or "[dim]—[/dim]",
+            )
+        console.print(table)
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
+
+
+@finance.command("add-account")
+@click.argument("name")
+@click.argument("type")
+@click.option("--institution", help="Bank/institution name")
+@click.option("--balance", type=float, default=0, help="Initial balance")
+def finance_add_account(name: str, type: str, institution: str, balance: float):
+    """Add a new account."""
+    if not api.logged_in():
+        console.print("[red]Not logged in. Run 'nexus auth login' first.[/red]")
+        sys.exit(1)
+    try:
+        acct = api.create_account(name, type, institution=institution, balance=balance)
+        console.print(f"[green]Created account #{acct['id']}:[/green] {acct['name']} ({acct['account_type']})")
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
+
+
+@finance.command("import")
+@click.argument("filepath", type=click.Path(exists=True))
+def finance_import(filepath: str):
+    """Import transactions from a CSV file."""
+    if not api.logged_in():
+        console.print("[red]Not logged in. Run 'nexus auth login' first.[/red]")
+        sys.exit(1)
+    try:
+        result = api.import_csv(filepath)
+        console.print(f"[green]Imported:[/green] {result['imported']} transactions")
+        if result.get("skipped"):
+            console.print(f"[yellow]Skipped:[/yellow] {result['skipped']} (duplicates)")
+        if result.get("errors"):
+            console.print("[red]Errors:[/red]")
+            for err in result["errors"]:
+                console.print(f"  [dim]{err}[/dim]")
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
 
 
 # ── Note ───────────────────────────────────────────────────────────────────

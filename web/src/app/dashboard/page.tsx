@@ -162,6 +162,9 @@ export default function DashboardPage() {
       <header className="flex items-center justify-between border-b px-6 py-3">
         <h1 className="text-xl font-semibold">Nexus</h1>
         <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => router.push("/finance")}>
+            Finance
+          </Button>
           <span className="text-sm text-muted-foreground">{user.email}</span>
           <Button variant="outline" size="sm" onClick={logout}>
             Sign Out

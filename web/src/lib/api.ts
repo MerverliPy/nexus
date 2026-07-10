@@ -149,4 +149,24 @@ export const api = {
   storeTokens,
   clearTokens,
   getTokens,
+
+  // Finance
+  createTransaction: (data: {
+    amount: number;
+    vendor?: string;
+    category?: string;
+    description?: string;
+    account_id?: number;
+    transaction_date?: string;
+  }) =>
+    request<Record<string, unknown>>("/api/v1/finance/transactions", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  deleteTransaction: (id: number) =>
+    fetch(`${API_BASE}/api/v1/finance/transactions/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${getTokens().access}` },
+    }).then((r) => { if (!r.ok && r.status !== 204) throw new ApiError("Delete failed", r.status); }),
 };

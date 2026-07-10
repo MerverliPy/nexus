@@ -2,6 +2,7 @@
 
 import json
 import os
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -190,6 +191,110 @@ def list_tasks(status: str | None = None) -> list[dict]:
     """List tasks with optional status filter."""
     params = f"?status={status}" if status else ""
     resp = _request("GET", f"/api/v1/tasks{params}")
+    if resp.status_code == 200:
+        return resp.json()
+    raise APIError(resp)
+
+
+# ── Finance Commands ────────────────────────────────────────────────────
+
+
+def list_accounts() -> list[dict]:
+    """List all accounts."""
+    resp = _request("GET", "/api/v1/finance/accounts")
+    if resp.status_code == 200:
+        return resp.json()
+    raise APIError(resp)
+
+
+def create_account(name: str, account_type: str, institution: str | None = None, balance: float = 0) -> dict:
+    """Create a new account."""
+    body: dict = {"name": name, "account_type": account_type, "balance": balance}
+    if institution:
+        body["institution"] = institution
+    resp = _request("POST", "/api/v1/finance/accounts", json_body=body)
+    if resp.status_code == 201:
+        return resp.json()
+    raise APIError(resp)
+
+
+def create_transaction(
+    amount: float,
+    vendor: str | None = None,
+    category: str | None = None,
+    description: str | None = None,
+    account_id: int | None = None,
+    date_str: str | None = None,
+) -> dict:
+    """Create a new transaction."""
+    from nexus.utils.dates import parse_natural_date
+
+    body: dict = {"amount": amount}
+
+    if vendor:
+        body["vendor"] = vendor
+    if category:
+        body["category"] = category
+    if description:
+        body["description"] = description
+    if account_id:
+        body["account_id"] = account_id
+
+    if date_str:
+        parsed = parse_natural_date(date_str)
+        body["transaction_date"] = parsed.date().isoformat() if parsed else date_str
+    else:
+        body["transaction_date"] = date.today().isoformat()
+
+    resp = _request("POST", "/api/v1/finance/transactions", json_body=body)
+    if resp.status_code == 201:
+        return resp.json()
+    raise APIError(resp)
+
+
+def list_transactions(
+    category: str | None = None,
+    vendor: str | None = None,
+    account_id: int | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    limit: int = 100,
+) -> list[dict]:
+    """List transactions with optional filters."""
+    params = []
+    if category:
+        params.append(f"category={category}")
+    if vendor:
+        params.append(f"vendor={vendor}")
+    if account_id:
+        params.append(f"account_id={account_id}")
+    if date_from:
+        params.append(f"from={date_from}")
+    if date_to:
+        params.append(f"to={date_to}")
+    params.append(f"limit={limit}")
+
+    qs = "?" + "&".join(params) if params else ""
+    resp = _request("GET", f"/api/v1/finance/transactions{qs}")
+    if resp.status_code == 200:
+        return resp.json()
+    raise APIError(resp)
+
+
+def import_csv(filepath: str) -> dict:
+    """Import transactions from a CSV file."""
+    import httpx
+
+    token = _get_access_token()
+    headers = {"Authorization": f"Bearer {token}"} if token else {}
+    with open(filepath, "rb") as f:
+        files = {"file": (filepath, f, "text/csv")}
+        resp = httpx.post(
+            f"{_get_base_url()}/api/v1/finance/transactions/import",
+            headers=headers,
+            files=files,
+            timeout=30,
+        )
     if resp.status_code == 200:
         return resp.json()
     raise APIError(resp)
