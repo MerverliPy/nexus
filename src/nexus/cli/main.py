@@ -1042,3 +1042,59 @@ def status():
 
 if __name__ == "__main__":
     cli()
+
+
+# ── Voice ──────────────────────────────────────────────────────────────
+
+
+@cli.group()
+def voice():
+    """Voice interface commands."""
+    pass
+
+
+@voice.command("record")
+@click.option("--duration", "-d", type=int, default=5, help="Recording duration in seconds")
+@click.option("--llm", is_flag=True, help="Use LLM for complex intent parsing")
+def voice_record(duration: int, llm: bool):
+    """Record audio from mic, transcribe, and parse intent."""
+    import json
+
+    from nexus.services.voice import parse_intent, parse_intent_llm, record_audio, transcribe_audio
+
+    console.print(f"[bold]Recording for {duration} seconds...[/bold]")
+    audio_path = record_audio(duration)
+    if audio_path is None:
+        console.print("[red]Recording failed. Is a microphone connected? (need arecord)[/red]")
+        sys.exit(1)
+
+    console.print("[bold]Transcribing...[/bold]")
+    text = transcribe_audio(audio_path)
+    audio_path.unlink(missing_ok=True)
+
+    if text is None:
+        console.print("[red]Transcription unavailable — set OPENAI_API_KEY[/red]")
+        sys.exit(1)
+
+    console.print(f"[green]Heard: [bold]\"{text}\"[/bold][/green]")
+
+    intent = parse_intent_llm(text) if llm else parse_intent(text)
+    console.print(f"[dim]Intent: {intent['intent']}[/dim]")
+    if intent.get("entities"):
+        console.print(f"[dim]Entities: {json.dumps(intent['entities'])}[/dim]")
+
+
+@voice.command("parse")
+@click.argument("text")
+@click.option("--llm", is_flag=True, help="Use LLM for complex intent parsing")
+def voice_parse(text: str, llm: bool):
+    """Parse text into a command intent."""
+    import json
+
+    from nexus.services.voice import parse_intent, parse_intent_llm
+
+    intent = parse_intent_llm(text) if llm else parse_intent(text)
+    console.print(f"[green]Text: [bold]\"{text}\"[/bold][/green]")
+    console.print(f"[dim]Intent: {intent['intent']}[/dim]")
+    if intent.get("entities"):
+        console.print(f"[dim]Entities: {json.dumps(intent['entities'])}[/dim]")

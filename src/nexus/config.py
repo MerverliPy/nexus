@@ -42,6 +42,7 @@ class Settings(BaseSettings):
 
     # LLM
     openrouter_api_key: str = ""
+    openai_api_key: str = ""
     llm_default_model: str = "anthropic/claude-3-5-sonnet"
     llm_fallback_model: str = "ollama/mistral:7b-instruct"
     llm_max_monthly_cost: float = 50.0

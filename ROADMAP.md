@@ -32,7 +32,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 | **2 — Finance** | ✅ 100% | CRUD, CSV import, analytics, OCR, ML categorization, accuracy tracking, vendor normalization — all done. |
 | **3 — Security/Prod** | 🟡 ~45% | All W9-10 done. W11-12: Prometheus /metrics, backup+restore scripts, systemd templates, circuit breaker, LLM cost model all in place. |
 | **4 — Research** | 🟡 ~85% | Notes, wiki-links, hybrid search, arXiv, credibility scoring, LLM plans, export, git versioning — all live & tested. |
-| **5 — Advanced** | 🟡 ~55% | Portfolio + net-worth + smart notification bundling + ML budget forecasting all live & tested. Voice/SMS/PWA remain. |
+| **5 — Advanced** | 🟡 ~60% | Portfolio + net-worth + smart notification bundling + ML forecasting all live & tested. Voice input added. TTS/SMS/PWA remain. |
 
 **Two systemic gaps cut across phases:**
 1. ~~**No Celery workers**~~ ✅ **RESOLVED** — `src/nexus/workers/` now has `app.py` (Celery + beat schedule) and `tasks.py` (recurring-task generation, ML retraining, DB backup, session cleanup). Redis-brokered; tasks auto-discovered.
@@ -498,8 +498,8 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 
 ### Week 17-18: Voice & Mobile Interfaces
 
-#### Deliverables — 🔴 NOT STARTED
-- [ ] Voice input via Whisper (speech-to-text)
+#### Deliverables — 🟡 IN PROGRESS
+- [x] Voice input via Whisper *(OpenAI Whisper API, arecord, regex+LLM intent parsing, CLI record/parse, 11 tests)*
 - [ ] Voice output via TTS (Coqui/ElevenLabs)
 - [ ] SMS gateway (Twilio) for quick capture
 - [ ] Mobile-optimized PWA

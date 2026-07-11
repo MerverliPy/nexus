@@ -14,6 +14,7 @@ from nexus.api.routers import (
     portfolio,
     research,
     tasks,
+    voice,
     ws,
 )
 from nexus.config import get_settings
@@ -83,3 +84,4 @@ app.include_router(research.router)
 app.include_router(portfolio.router)
 app.include_router(notifications.router)
 app.include_router(ws.router)
+app.include_router(voice.router)
