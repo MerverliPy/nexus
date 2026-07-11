@@ -43,6 +43,9 @@ class User(BaseModel):
     refresh_sessions = relationship(
         "RefreshSession", back_populates="user", cascade="all, delete-orphan"
     )
+    vendor_aliases = relationship(
+        "VendorAlias", back_populates="user", cascade="all, delete-orphan"
+    )
 
     def get_backup_codes(self) -> list[str]:
         """Decrypt and parse backup codes."""

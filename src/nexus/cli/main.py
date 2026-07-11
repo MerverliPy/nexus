@@ -576,6 +576,66 @@ def finance_forecast(horizon: int):
         sys.exit(1)
 
 
+@finance.command("vendors")
+@click.option("--search", "-s", default=None, help="Filter by vendor name")
+def finance_vendors(search: str | None):
+    """List vendor aliases."""
+    try:
+        vendors = api.list_vendors(search=search)
+        if not vendors:
+            console.print("[dim]No vendor aliases found.[/dim]")
+            return
+        table = Table(title="Vendor Aliases")
+        table.add_column("ID", justify="right")
+        table.add_column("Raw Name")
+        table.add_column("Canonical Name")
+        for v in vendors:
+            table.add_row(str(v["id"]), v["raw_name"], v["canonical_name"])
+        console.print(table)
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
+
+
+@finance.command("vendors-distinct")
+def finance_vendors_distinct():
+    """List distinct vendor names from transactions (for merge suggestions)."""
+    try:
+        vendors = api.list_distinct_vendors()
+        if not vendors:
+            console.print("[dim]No distinct vendors found.[/dim]")
+            return
+        table = Table(title="Distinct Vendors")
+        table.add_column("Vendor")
+        table.add_column("Transactions", justify="right")
+        for v in vendors:
+            table.add_row(v["vendor"] or "—", str(v["transaction_count"]))
+        console.print(table)
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
+
+
+@finance.command("merge-vendor")
+@click.argument("canonical_name")
+@click.argument("raw_names", nargs=-1)
+def finance_merge_vendor(canonical_name: str, raw_names: tuple[str, ...]):
+    """Merge raw vendor names into a canonical name.
+
+    \b
+    Example: nexus finance merge-vendor "Starbucks" "starbucks" "star bucks" "sbux"
+    """
+    if not raw_names:
+        console.print("[red]At least one raw name is required.[/red]")
+        sys.exit(1)
+    try:
+        result = api.merge_vendors(list(raw_names), canonical_name)
+        console.print(f"[green]Merged {result['merged']} alias(es) → [bold]{result['canonical_name']}[/bold][/green]")
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
+
+
 # ── Note ───────────────────────────────────────────────────────────────────
 
 

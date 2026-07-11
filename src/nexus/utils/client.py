@@ -533,6 +533,42 @@ def forecast_spending(horizon_days: int = 30) -> dict:
     raise APIError(resp)
 
 
+# ── Vendor Normalization ────────────────────────────────────────────────
+
+
+def list_vendors(search: str | None = None) -> list[dict]:
+    """List vendor aliases."""
+    from urllib.parse import quote
+
+    url = "/api/v1/finance/vendors"
+    if search:
+        url += f"?search={quote(search)}"
+    resp = _request("GET", url)
+    if resp.status_code == 200:
+        return resp.json()
+    raise APIError(resp)
+
+
+def list_distinct_vendors() -> list[dict]:
+    """List distinct vendor names from transactions."""
+    resp = _request("GET", "/api/v1/finance/vendors/distinct")
+    if resp.status_code == 200:
+        return resp.json()
+    raise APIError(resp)
+
+
+def merge_vendors(raw_names: list[str], canonical_name: str) -> dict:
+    """Merge raw vendor names into a canonical name."""
+    resp = _request(
+        "POST",
+        "/api/v1/finance/vendors/merge",
+        json={"raw_names": raw_names, "canonical_name": canonical_name},
+    )
+    if resp.status_code == 200:
+        return resp.json()
+    raise APIError(resp)
+
+
 # ── Error ──────────────────────────────────────────────────────────────
 
 

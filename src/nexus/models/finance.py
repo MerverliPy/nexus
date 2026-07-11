@@ -77,3 +77,21 @@ class Transaction(BaseModel):
 
     def __repr__(self) -> str:
         return f"<Transaction(id={self.id}, amount={self.amount}, vendor='{self.vendor}')>"
+
+
+class VendorAlias(BaseModel):
+    """Normalization mapping: raw vendor name → canonical name."""
+
+    __tablename__ = "vendor_aliases"
+
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    raw_name = Column(String(255), nullable=False, index=True)
+    canonical_name = Column(String(255), nullable=False)
+
+    # Relationships
+    user = relationship("User", back_populates="vendor_aliases")
+
+    def __repr__(self) -> str:
+        return f"<VendorAlias(id={self.id}, '{self.raw_name}' → '{self.canonical_name}')>"

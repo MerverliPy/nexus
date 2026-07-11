@@ -2,7 +2,7 @@
 
 from nexus.models.automation import AuditLog, Automation
 from nexus.models.base import BaseModel, TimestampMixin
-from nexus.models.finance import Account, Transaction
+from nexus.models.finance import Account, Transaction, VendorAlias
 from nexus.models.llm_usage import LLMUsage
 from nexus.models.notification import Notification, NotificationPreference
 from nexus.models.portfolio import Holding, NetWorthSnapshot, Portfolio
@@ -18,6 +18,7 @@ __all__ = [
     "Task",
     "Account",
     "Transaction",
+    "VendorAlias",
     "ResearchProject",
     "Note",
     "NoteLink",

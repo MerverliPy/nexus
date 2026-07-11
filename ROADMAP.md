@@ -29,7 +29,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 | Phase | Status | Summary |
 |-------|--------|---------|
 | **1 — Foundation** | ✅ ~95% | Infra, JWT auth, tasks, Next.js web, WebSocket live. Celery worker now generates recurring task instances. |
-| **2 — Finance** | ✅ ~90% | CRUD + CSV import + analytics + OCR + ML categorization + accuracy tracking all wired. |
+| **2 — Finance** | ✅ 100% | CRUD, CSV import, analytics, OCR, ML categorization, accuracy tracking, vendor normalization — all done. |
 | **3 — Security/Prod** | 🟡 ~45% | All W9-10 done. W11-12: Prometheus /metrics, backup+restore scripts, systemd templates, circuit breaker, LLM cost model all in place. |
 | **4 — Research** | 🟡 ~70% | Notes, wiki-links, hybrid search, arXiv, credibility scoring, LLM plans, export — all live & tested. |
 | **5 — Advanced** | 🟡 ~55% | Portfolio + net-worth + smart notification bundling + ML budget forecasting all live & tested. Voice/SMS/PWA remain. |
@@ -207,7 +207,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 #### Deliverables — 🟡 MOSTLY DONE
 - [x] Receipt photo → OCR → transaction *(ocr.py + /transactions/scan)*
 - [x] ML categorization with learning from corrections *(categorizer.py + predict/correct-category endpoints)*
-- [~] Vendor normalization table *(only in-memory `_clean_vendor` helper; no vendor_aliases table, no fuzzy merge)*
+- [x] Vendor normalization table *(VendorAlias model, fuzzy matching via difflib, merge-vendor endpoint, CLI: vendors + vendors-distinct + merge-vendor, 17 tests)*
 - [x] Categorization accuracy tracking *(prediction log → get_accuracy_stats; per-category accuracy; GET /analytics/categorizer-accuracy endpoint; 10 tests)*
 
 #### Tasks

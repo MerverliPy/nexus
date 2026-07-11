@@ -21,6 +21,7 @@ from nexus.utils.categorizer import get_accuracy_stats, predict_category, record
 from nexus.utils.dependencies import get_current_user
 from nexus.utils.ocr import process_receipt
 from nexus.utils.storage import ensure_buckets, upload_receipt_bytes
+from nexus.utils.vendors import list_distinct_vendors, list_vendors, merge_vendors
 
 router = APIRouter(prefix="/api/v1/finance", tags=["finance"])
 
@@ -697,3 +698,43 @@ async def categorizer_accuracy(
 ):
     """Return ML categorizer accuracy metrics for the last N days."""
     return get_accuracy_stats(days=days)
+
+
+# ── Vendor Normalization ────────────────────────────────────────────────
+
+
+@router.get("/vendors")
+async def get_vendors(
+    search: str | None = Query(None),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """List vendor aliases with optional search filter."""
+    return await list_vendors(user.id, db, search=search)
+
+
+@router.get("/vendors/distinct")
+async def get_distinct_vendors(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """List distinct vendor names from transactions (for merge suggestions)."""
+    return await list_distinct_vendors(user.id, db)
+
+
+@router.post("/vendors/merge")
+async def merge_vendor_aliases(
+    body: dict,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Merge raw vendor names into a canonical name.
+
+    Body: {"raw_names": ["starbucks", "star bucks", "sbux"], "canonical_name": "Starbucks"}
+    """
+    raw_names = body.get("raw_names", [])
+    canonical_name = body.get("canonical_name", "")
+    if not raw_names or not canonical_name:
+        raise HTTPException(status_code=400, detail="raw_names and canonical_name are required")
+    count = await merge_vendors(raw_names, canonical_name, user.id, db)
+    return {"merged": count, "canonical_name": canonical_name}
