@@ -22,21 +22,21 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 
 ## 📊 Implementation Status (as of 2026-07-11)
 
-> **Snapshot:** Phases 1–2 are built and wired end-to-end (usable software). Phase 3 is schema/scaffolding only. Phases 4–5 are models + stubs. Every commit after the Phase 2 lint fix (`a9fbc19`) is documentation polish — active feature development stopped at the end of Phase 2. Current working line: **mid-Phase 3**.
+> **Snapshot:** Phases 1–2 built end-to-end. Phase 3 security layer (MFA, sessions, audit, encryption) + production layer (metrics, backups, systemd, circuit breaker, LLM cost model) all wired & tested. **Celery worker app now implemented** — the cross-cutting async gate is closed. Current working line: **finishing Phase 3 → ready for Phase 4**.
 
 **Legend:** `[x]` done · `[~]` partial / scaffolded · `[ ]` not started
 
 | Phase | Status | Summary |
 |-------|--------|---------|
-| **1 — Foundation** | ✅ ~90% | Infra, JWT auth, tasks, Next.js web, WebSocket all live. Gaps: no Celery worker; only 5 tests. |
+| **1 — Foundation** | ✅ ~95% | Infra, JWT auth, tasks, Next.js web, WebSocket live. Celery worker now generates recurring task instances. |
 | **2 — Finance** | ✅ ~85% | CRUD + CSV import + analytics + OCR + ML categorization all wired. |
 | **3 — Security/Prod** | 🟡 ~45% | All W9-10 done. W11-12: Prometheus /metrics, backup+restore scripts, systemd templates, circuit breaker, LLM cost model all in place. |
 | **4 — Research** | 🔴 models only | Models exist; no router registered; CLI `note` commands are TODO stubs. |
 | **5 — Advanced** | 🔴 0% | Not started (`Automation` model exists, no router). |
 
 **Two systemic gaps cut across phases:**
-1. **No Celery workers** — `src/nexus/workers/` is empty despite `celery` being a declared dependency, blocking every scheduled/async feature (recurring tasks, retraining, backups, price updates, digests).
-2. **Declared-but-unused dependencies** for Phases 3–5 (`pyotp`, `tenacity`, `circuitbreaker`, `prometheus-client`, `sentence-transformers`) — intent scaffolded, code not written.
+1. ~~**No Celery workers**~~ ✅ **RESOLVED** — `src/nexus/workers/` now has `app.py` (Celery + beat schedule) and `tasks.py` (recurring-task generation, ML retraining, DB backup, session cleanup). Redis-brokered; tasks auto-discovered.
+2. **Declared-but-unused dependencies** — mostly resolved: `pyotp`, `tenacity`, `circuitbreaker`, `prometheus-client`, `celery` are all now wired. `sentence-transformers` remains unused (Phase 4 semantic search).
 
 ---
 
@@ -104,7 +104,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 #### Deliverables — 🟡 MOSTLY DONE
 - [x] Next.js web dashboard (task list, create, complete)
 - [x] Real-time updates via WebSocket *(ws.py + ws_manager.py)*
-- [~] Recurring tasks (RRULE format) *(recurrence.py util exists; no Celery worker to generate instances)*
+- [x] Recurring tasks (RRULE format) *(recurrence.py + Celery generate_recurring_tasks task, hourly beat schedule; tested)*
 - [~] Task dependencies and smart scheduling *(dependencies.py util exists; smart scheduling not wired)*
 
 #### Tasks
@@ -604,7 +604,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 
 | Phase | Weeks | Effort (hours) | Status | Key Deliverables |
 |-------|-------|----------------|--------|------------------|
-| **Phase 1** | 1-4 | 60 | ✅ ~90% | Infrastructure, Task Management (CLI + Web) |
+| **Phase 1** | 1-4 | 60 | ✅ ~95% | Infrastructure, Task Management (CLI + Web) |
 | **Phase 2** | 5-8 | 76 | ✅ ~85% | Financial Intelligence (Transactions, OCR, ML) |
 | **Phase 3** | 9-12 | 64 | 🟡 ~45% | Security & Production (MFA, Monitoring, Backups) |
 | **Phase 4** | 13-16 | 76 | 🔴 models only | Research & Knowledge (Wiki, Semantic Search) |
