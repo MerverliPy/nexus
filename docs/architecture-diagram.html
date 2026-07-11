@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Architecture</title>
+</head>
+<body style="margin: 0; padding: 20px; background: #0d1117; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+    <svg width="1200" height="800" xmlns="http://www.w3.org/2000/svg">
+        <!-- Dark background -->
+        <rect width="1200" height="800" fill="#0d1117"/>
+        
+        <!-- Title -->
+        <text x="600" y="40" font-size="32" font-weight="bold" fill="#58a6ff" text-anchor="middle">
+            Nexus Personal AI System - Architecture
+        </text>
+        
+        <!-- Client Layer -->
+        <text x="100" y="100" font-size="18" font-weight="bold" fill="#58a6ff">Client Interfaces</text>
+        <rect x="80" y="120" width="140" height="80" rx="10" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+        <text x="150" y="150" font-size="14" fill="#c9d1d9" text-anchor="middle">🖥️ CLI</text>
+        <text x="150" y="175" font-size="12" fill="#8b949e" text-anchor="middle">Click + Rich</text>
+        
+        <rect x="240" y="120" width="140" height="80" rx="10" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+        <text x="310" y="150" font-size="14" fill="#c9d1d9" text-anchor="middle">🌐 Web UI</text>
+        <text x="310" y="175" font-size="12" fill="#8b949e" text-anchor="middle">React + WebSocket</text>
+        
+        <rect x="400" y="120" width="140" height="80" rx="10" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+        <text x="470" y="150" font-size="14" fill="#c9d1d9" text-anchor="middle">📱 Mobile (Future)</text>
+        <text x="470" y="175" font-size="12" fill="#8b949e" text-anchor="middle">React Native</text>
+        
+        <rect x="560" y="120" width="140" height="80" rx="10" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+        <text x="630" y="150" font-size="14" fill="#c9d1d9" text-anchor="middle">📧 Email/SMS</text>
+        <text x="630" y="175" font-size="12" fill="#8b949e" text-anchor="middle">Remote Access</text>
+        
+        <!-- Arrow from clients to API Gateway -->
+        <line x1="350" y1="200" x2="350" y2="260" stroke="#58a6ff" stroke-width="2" marker-end="url(#arrowhead)"/>
+        
+        <!-- API Gateway Layer -->
+        <text x="100" y="290" font-size="18" font-weight="bold" fill="#58a6ff">API Gateway</text>
+        <rect x="80" y="310" width="540" height="100" rx="10" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+        <text x="350" y="345" font-size="16" fill="#c9d1d9" text-anchor="middle" font-weight="bold">FastAPI Gateway</text>
+        <text x="200" y="375" font-size="12" fill="#8b949e">🔐 JWT Auth</text>
+        <text x="350" y="375" font-size="12" fill="#8b949e">🛡️ Rate Limiting</text>
+        <text x="500" y="375" font-size="12" fill="#8b949e">📊 Metrics</text>
+        
+        <!-- Arrow from Gateway to Core Services -->
+        <line x1="350" y1="410" x2="350" y2="470" stroke="#58a6ff" stroke-width="2" marker-end="url(#arrowhead)"/>
+        
+        <!-- Core Services Layer -->
+        <text x="100" y="500" font-size="18" font-weight="bold" fill="#58a6ff">Core Services</text>
+        
+        <!-- Task Service -->
+        <rect x="80" y="520" width="160" height="120" rx="10" fill="#1f2937" stroke="#3b82f6" stroke-width="2"/>
+        <text x="160" y="550" font-size="14" fill="#c9d1d9" text-anchor="middle" font-weight="bold">📋 Task Engine</text>
+        <text x="160" y="575" font-size="11" fill="#8b949e" text-anchor="middle">• Smart Scheduling</text>
+        <text x="160" y="595" font-size="11" fill="#8b949e" text-anchor="middle">• Conflict Detection</text>
+        <text x="160" y="615" font-size="11" fill="#8b949e" text-anchor="middle">• Recurring Tasks</text>
+        
+        <!-- Financial Service -->
+        <rect x="260" y="520" width="160" height="120" rx="10" fill="#1f2937" stroke="#10b981" stroke-width="2"/>
+        <text x="340" y="550" font-size="14" fill="#c9d1d9" text-anchor="middle" font-weight="bold">💰 Finance Core</text>
+        <text x="340" y="575" font-size="11" fill="#8b949e" text-anchor="middle">• Receipt OCR</text>
+        <text x="340" y="595" font-size="11" fill="#8b949e" text-anchor="middle">• ML Categorization</text>
+        <text x="340" y="615" font-size="11" fill="#8b949e" text-anchor="middle">• Budget Tracking</text>
+        
+        <!-- Research Service -->
+        <rect x="440" y="520" width="160" height="120" rx="10" fill="#1f2937" stroke="#f59e0b" stroke-width="2"/>
+        <text x="520" y="550" font-size="14" fill="#c9d1d9" text-anchor="middle" font-weight="bold">📚 Research Hub</text>
+        <text x="520" y="575" font-size="11" fill="#8b949e" text-anchor="middle">• Semantic Search</text>
+        <text x="520" y="595" font-size="11" fill="#8b949e" text-anchor="middle">• Wiki Integration</text>
+        <text x="520" y="615" font-size="11" fill="#8b949e" text-anchor="middle">• arXiv Discovery</text>
+        
+        <!-- Arrow from Core to Data Layer -->
+        <line x1="350" y1="640" x2="350" y2="700" stroke="#58a6ff" stroke-width="2" marker-end="url(#arrowhead)"/>
+        
+        <!-- Data & Storage Layer -->
+        <text x="100" y="730" font-size="18" font-weight="bold" fill="#58a6ff">Data & Storage</text>
+        
+        <!-- PostgreSQL -->
+        <rect x="80" y="750" width="140" height="80" rx="10" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+        <text x="150" y="780" font-size="14" fill="#c9d1d9" text-anchor="middle">🐘 PostgreSQL</text>
+        <text x="150" y="805" font-size="11" fill="#8b949e" text-anchor="middle">+ pgvector</text>
+        
+        <!-- Redis -->
+        <rect x="240" y="750" width="140" height="80" rx="10" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+        <text x="310" y="780" font-size="14" fill="#c9d1d9" text-anchor="middle">⚡ Redis</text>
+        <text x="310" y="805" font-size="11" fill="#8b949e" text-anchor="middle">Celery Queue</text>
+        
+        <!-- MinIO -->
+        <rect x="400" y="750" width="140" height="80" rx="10" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+        <text x="470" y="780" font-size="14" fill="#c9d1d9" text-anchor="middle">📦 MinIO</text>
+        <text x="470" y="805" font-size="11" fill="#8b949e" text-anchor="middle">Object Storage</text>
+        
+        <!-- Background Workers (Right Side) -->
+        <text x="720" y="500" font-size="18" font-weight="bold" fill="#58a6ff">Background Workers</text>
+        
+        <!-- Celery Worker -->
+        <rect x="700" y="520" width="180" height="100" rx="10" fill="#161b22" stroke="#8b5cf6" stroke-width="2"/>
+        <text x="790" y="550" font-size="14" fill="#c9d1d9" text-anchor="middle" font-weight="bold">⚙️ Celery Workers</text>
+        <text x="790" y="575" font-size="11" fill="#8b949e" text-anchor="middle">• Async Task Processing</text>
+        <text x="790" y="595" font-size="11" fill="#8b949e" text-anchor="middle">• Scheduled Jobs</text>
+        
+        <!-- Monitoring Stack (Right Side) -->
+        <text x="720" y="660" font-size="18" font-weight="bold" fill="#58a6ff">Observability</text>
+        
+        <!-- Prometheus -->
+        <rect x="700" y="680" width="80" height="60" rx="10" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+        <text x="740" y="710" font-size="12" fill="#c9d1d9" text-anchor="middle">📊</text>
+        <text x="740" y="728" font-size="11" fill="#8b949e" text-anchor="middle">Prometheus</text>
+        
+        <!-- Grafana -->
+        <rect x="800" y="680" width="80" height="60" rx="10" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+        <text x="840" y="710" font-size="12" fill="#c9d1d9" text-anchor="middle">📈</text>
+        <text x="840" y="728" font-size="11" fill="#8b949e" text-anchor="middle">Grafana</text>
+        
+        <!-- LLM Providers (Right Side) -->
+        <text x="950" y="290" font-size="18" font-weight="bold" fill="#58a6ff">AI/ML Services</text>
+        
+        <!-- OpenRouter -->
+        <rect x="920" y="310" width="140" height="70" rx="10" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+        <text x="990" y="340" font-size="14" fill="#c9d1d9" text-anchor="middle">🤖 OpenRouter</text>
+        <text x="990" y="365" font-size="11" fill="#8b949e" text-anchor="middle">LLM Gateway</text>
+        
+        <!-- Ollama -->
+        <rect x="920" y="400" width="140" height="70" rx="10" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+        <text x="990" y="430" font-size="14" fill="#c9d1d9" text-anchor="middle">🦙 Ollama</text>
+        <text x="990" y="455" font-size="11" fill="#8b949e" text-anchor="middle">Local Models</text>
+        
+        <!-- Connection lines -->
+        <line x1="620" y1="360" x2="920" y2="350" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="5,5"/>
+        <line x1="620" y1="360" x2="920" y2="435" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="5,5"/>
+        
+        <!-- Arrow marker definition -->
+        <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                <polygon points="0 0, 10 3, 0 6" fill="#58a6ff"/>
+            </marker>
+        </defs>
+        
+        <!-- Legend -->
+        <text x="950" y="580" font-size="14" font-weight="bold" fill="#c9d1d9">Legend</text>
+        <line x1="950" y1="600" x2="990" y2="600" stroke="#58a6ff" stroke-width="2"/>
+        <text x="1000" y="605" font-size="11" fill="#8b949e">Sync Flow</text>
+        
+        <line x1="950" y1="620" x2="990" y2="620" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="5,5"/>
+        <text x="1000" y="625" font-size="11" fill="#8b949e">Async Flow</text>
+    </svg>
+</body>
+</html>
