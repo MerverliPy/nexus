@@ -32,7 +32,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 | **2 — Finance** | ✅ 100% | CRUD, CSV import, analytics, OCR, ML categorization, accuracy tracking, vendor normalization — all done. |
 | **3 — Security/Prod** | 🟡 ~45% | All W9-10 done. W11-12: Prometheus /metrics, backup+restore scripts, systemd templates, circuit breaker, LLM cost model all in place. |
 | **4 — Research** | 🟡 ~85% | Notes, wiki-links, hybrid search, arXiv, credibility scoring, LLM plans, export, git versioning — all live & tested. |
-| **5 — Advanced** | 🟡 ~65% | Portfolio + net-worth + smart notification bundling + ML forecasting + full voice interface (STT + TTS) all live & tested. SMS/PWA remain. |
+| **5 — Advanced** | 🟡 ~70% | Portfolio + net-worth + smart notification bundling + ML forecasting + voice (STT+TTS) + SMS gateway all live & tested. PWA remains. |
 
 **Two systemic gaps cut across phases:**
 1. ~~**No Celery workers**~~ ✅ **RESOLVED** — `src/nexus/workers/` now has `app.py` (Celery + beat schedule) and `tasks.py` (recurring-task generation, ML retraining, DB backup, session cleanup). Redis-brokered; tasks auto-discovered.
@@ -501,7 +501,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 #### Deliverables — 🟡 IN PROGRESS
 - [x] Voice input via Whisper *(OpenAI Whisper API, arecord, regex+LLM intent parsing, CLI record/parse, 11 tests)*
 - [x] Voice output via TTS *(OpenAI TTS API, 6 voices, CLI speak + API /speak, ffplay/aplay playback, 4 tests)*
-- [ ] SMS gateway (Twilio) for quick capture
+- [x] SMS gateway (Twilio) *(webhook, Twilio signature validation, command processing, rate limit 10/h, sms_phone on User model, 4 tests)*
 - [ ] Mobile-optimized PWA
 
 #### Tasks

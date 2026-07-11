@@ -32,6 +32,7 @@ class User(BaseModel):
         EncryptedType(Text, settings.nexus_encryption_key, AesEngine, "pkcs5"),
         nullable=True,
     )
+    sms_phone = Column(String(20), nullable=True, unique=True)
 
     # Relationships
     tasks = relationship("Task", back_populates="user", cascade="all, delete-orphan")

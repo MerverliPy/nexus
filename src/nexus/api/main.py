@@ -13,6 +13,7 @@ from nexus.api.routers import (
     notifications,
     portfolio,
     research,
+    sms,
     tasks,
     voice,
     ws,
@@ -85,3 +86,4 @@ app.include_router(portfolio.router)
 app.include_router(notifications.router)
 app.include_router(ws.router)
 app.include_router(voice.router)
+app.include_router(sms.router)
