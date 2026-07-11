@@ -32,7 +32,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 | **2 — Finance** | ✅ 100% | CRUD, CSV import, analytics, OCR, ML categorization, accuracy tracking, vendor normalization — all done. |
 | **3 — Security/Prod** | 🟡 ~45% | All W9-10 done. W11-12: Prometheus /metrics, backup+restore scripts, systemd templates, circuit breaker, LLM cost model all in place. |
 | **4 — Research** | 🟡 ~85% | Notes, wiki-links, hybrid search, arXiv, credibility scoring, LLM plans, export, git versioning — all live & tested. |
-| **5 — Advanced** | 🟡 ~70% | Portfolio + net-worth + smart notification bundling + ML forecasting + voice (STT+TTS) + SMS gateway all live & tested. PWA remains. |
+| **5 — Advanced** | ✅ 100% | Portfolio + net-worth + notification bundling + ML forecasting + voice (STT+TTS) + SMS gateway + mobile PWA — all done. |
 
 **Two systemic gaps cut across phases:**
 1. ~~**No Celery workers**~~ ✅ **RESOLVED** — `src/nexus/workers/` now has `app.py` (Celery + beat schedule) and `tasks.py` (recurring-task generation, ML retraining, DB backup, session cleanup). Redis-brokered; tasks auto-discovered.
@@ -502,7 +502,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 - [x] Voice input via Whisper *(OpenAI Whisper API, arecord, regex+LLM intent parsing, CLI record/parse, 11 tests)*
 - [x] Voice output via TTS *(OpenAI TTS API, 6 voices, CLI speak + API /speak, ffplay/aplay playback, 4 tests)*
 - [x] SMS gateway (Twilio) *(webhook, Twilio signature validation, command processing, rate limit 10/h, sms_phone on User model, 4 tests)*
-- [ ] Mobile-optimized PWA
+- [x] Mobile-optimized PWA *(manifest.json, icons, viewport meta, apple-mobile-web-app, MobileNav bottom bar, safe-area CSS, touch-target utilities)*
 
 #### Tasks
 1. **Voice input** (6h)
@@ -606,11 +606,11 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 | Phase | Weeks | Effort (hours) | Status | Key Deliverables |
 |-------|-------|----------------|--------|------------------|
 | **Phase 1** | 1-4 | 60 | ✅ ~95% | Infrastructure, Task Management (CLI + Web) |
-| **Phase 2** | 5-8 | 76 | ✅ ~85% | Financial Intelligence (Transactions, OCR, ML) |
+| **Phase 2** | 5-8 | 76 | ✅ 100% | Financial Intelligence (Transactions, OCR, ML, vendor norm.) |
 | **Phase 3** | 9-12 | 64 | 🟡 ~45% | Security & Production (MFA, Monitoring, Backups) |
-| **Phase 4** | 13-16 | 76 | 🟡 ~70% | Research & Knowledge (Wiki, Semantic Search) |
-| **Phase 5** | 17-20 | 68 | 🟡 ~40% | Advanced Features (Voice, SMS, Portfolio) |
-| **Total** | 20 | **344** | 🟡 ~40% | Full-featured Personal AI System |
+| **Phase 4** | 13-16 | 76 | 🟡 ~85% | Research & Knowledge (Wiki, Semantic Search, git ver.) |
+| **Phase 5** | 17-20 | 68 | ✅ 100% | Advanced Features (Voice, SMS, PWA) |
+| **Total** | 20 | **344** | 🟡 ~85% | Full-featured Personal AI System |
 
 *Note: Total is less than 480 due to removing optional tasks (LayoutLM, advanced features). Buffer of 136 hours for debugging, refactoring, and unexpected issues.*
 

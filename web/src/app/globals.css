@@ -128,3 +128,14 @@
     @apply font-sans;
   }
 }
+
+/* ── PWA / Mobile ─────────────────────────────────────────────────────── */
+
+@utility safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@utility touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}

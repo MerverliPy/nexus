@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { api, type Task } from "@/lib/api";
 import { useWebSocket } from "@/lib/use-websocket";
+import { MobileNav } from "@/components/mobile-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -172,7 +173,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-6 pb-24 md:pb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <div>
@@ -347,6 +348,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </main>
+      <MobileNav />
     </div>
   );
 }
