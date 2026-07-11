@@ -32,7 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Categorization accuracy tracking — prediction log, per-category stats, accuracy endpoint + 10 tests
 - Vendor normalization — VendorAlias model, fuzzy matching (difflib), merge/alias APIs + 17 tests
 - Note versioning (git-backed) — auto-commit on save, history/restore endpoints, CLI + 10 tests
-- Voice input — Whisper API transcription + regex/LLM intent parsing (finance_log, task_add, balance, recent); CLI: nexus voice record/parse; API: POST /voice/transcribe + 11 tests
+- Voice input — Whisper API transcription + regex/LLM intent parsing; CLI: nexus voice record/parse; API + 11 tests
+- Voice output (TTS) — OpenAI TTS API, 6 voices, CLI: nexus voice speak, API: POST /voice/speak + 4 tests
 
 ### Infrastructure
 - Docker Compose setup with 6 services

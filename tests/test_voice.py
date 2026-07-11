@@ -1,9 +1,39 @@
 """Tests for voice interface — intent parsing and API endpoint."""
 
+from unittest.mock import patch
+
 import pytest
 from fastapi import status
 
-from nexus.services.voice import parse_intent
+from nexus.services.voice import parse_intent, speak_text
+
+
+class _FakeResp:
+    def __init__(self, status_code, content):
+        self.status_code = status_code
+        self.content = content
+
+
+# ── TTS unit tests ──────────────────────────────────────────────────────────
+
+
+def test_speak_text_returns_none_without_api_key(monkeypatch):
+    monkeypatch.setattr("nexus.services.voice._get_openai_key", lambda: "")
+    assert speak_text("hello") is None
+
+
+def test_speak_text_calls_openai():
+    with patch("httpx.post", return_value=_FakeResp(200, b"mp3data")):
+        with patch("nexus.services.voice._get_openai_key", return_value="sk-test"):
+            result = speak_text("hello world", voice="nova")
+            assert result == b"mp3data"
+
+
+def test_speak_text_returns_none_on_api_error():
+    with patch("httpx.post", return_value=_FakeResp(500, b"")):
+        with patch("nexus.services.voice._get_openai_key", return_value="sk-test"):
+            result = speak_text("hello")
+            assert result is None
 
 
 # ── Intent parsing unit tests ───────────────────────────────────────────────
@@ -79,4 +109,10 @@ async def test_transcribe_endpoint_with_text(client):
 @pytest.mark.asyncio
 async def test_transcribe_endpoint_no_input(client):
     response = await client.post("/api/v1/voice/transcribe")
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+@pytest.mark.asyncio
+async def test_speak_endpoint_requires_auth(client):
+    response = await client.post("/api/v1/voice/speak", json={"text": "hello"})
     assert response.status_code == status.HTTP_401_UNAUTHORIZED

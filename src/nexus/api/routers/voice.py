@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from pydantic import BaseModel
 
 from nexus.models.user import User
-from nexus.services.voice import parse_intent, parse_intent_llm, transcribe_audio
+from nexus.services.voice import parse_intent, parse_intent_llm, speak_text, transcribe_audio
 from nexus.utils.dependencies import get_current_user
 
 router = APIRouter(prefix="/api/v1/voice", tags=["voice"])
@@ -63,3 +63,29 @@ async def voice_transcribe(
         intent=intent,
         source="whisper" if audio else "text_input",
     )
+
+
+@router.post("/speak")
+async def voice_speak(
+    body: dict,
+    user: User = Depends(get_current_user),
+):
+    """Convert text to speech and return MP3 audio.
+
+    Body: {"text": "Hello world", "voice": "alloy"}
+    Returns raw audio/mpeg bytes.
+    """
+    from fastapi.responses import Response
+
+    text = body.get("text", "")
+    if not text:
+        raise HTTPException(status_code=400, detail="text is required")
+    voice = body.get("voice", "alloy")
+
+    audio = speak_text(text, voice=voice)
+    if audio is None:
+        raise HTTPException(
+            status_code=503,
+            detail="TTS unavailable — OPENAI_API_KEY not configured or API error",
+        )
+    return Response(content=audio, media_type="audio/mpeg")

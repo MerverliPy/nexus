@@ -1098,3 +1098,22 @@ def voice_parse(text: str, llm: bool):
     console.print(f"[dim]Intent: {intent['intent']}[/dim]")
     if intent.get("entities"):
         console.print(f"[dim]Entities: {json.dumps(intent['entities'])}[/dim]")
+
+
+@voice.command("speak")
+@click.argument("text")
+@click.option("--voice", "-v", default="alloy", help="Voice: alloy, echo, fable, onyx, nova, shimmer")
+def voice_speak(text: str, voice: str):
+    """Convert text to speech and play audio through speakers."""
+    from nexus.services.voice import play_audio, speak_text
+
+    console.print(f"[bold]Speaking: \"{text}\"...[/bold]")
+    audio = speak_text(text, voice=voice)
+    if audio is None:
+        console.print("[red]TTS unavailable — set OPENAI_API_KEY[/red]")
+        sys.exit(1)
+
+    if play_audio(audio):
+        console.print("[green]Done.[/green]")
+    else:
+        console.print("[yellow]Audio generated but playback failed (need ffplay or aplay).[/yellow]")
