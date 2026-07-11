@@ -8,6 +8,8 @@
 
 Nexus is a self-hosted AI assistant that unifies task management, financial tracking, and research workflows into a single, privacy-first system. Built for technical users who value data sovereignty and production-grade reliability.
 
+> 🚀 **New to Nexus?** Start with the [**30-Minute Getting Started Guide**](GETTING_STARTED.md) to go from zero to your first working task.
+
 ---
 
 ## ✨ Key Features at a Glance
@@ -257,7 +259,11 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 For questions, bug reports, or feature requests:
 
-- 📖 **Documentation** - Check `docs/`, `SPECIFICATION.md`, and `QUICKSTART.md` first
+- 📖 **[Getting Started Guide](GETTING_STARTED.md)** - 30-minute tutorial from zero to running
+- 🔍 **[FAQ](docs/FAQ.md)** - 40+ common questions answered
+- 📊 **[Feature Comparison](docs/COMPARISON.md)** - Compare Nexus vs commercial alternatives
+- 📖 **[Documentation](docs/)** - Check `SPECIFICATION.md`, `QUICKSTART.md`, and `OPERATIONS.md`
+- 🔒 **[Security Policy](SECURITY.md)** - Vulnerability disclosure and security best practices
 - 💬 **Discussions** - Open a [GitHub Discussion](https://github.com/calvin/nexus/discussions) for general questions
 - 🐛 **Bug Reports** - Use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.md)
 - ✨ **Feature Requests** - Use the [feature request template](.github/ISSUE_TEMPLATE/feature_request.md)
