@@ -1,11 +1,49 @@
 # Nexus Personal AI System
 
-[![CI](https://github.com/MerverliPy/nexus/actions/workflows/ci.yml/badge.svg)](https://github.com/MerverliPy/nexus/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-**Your autonomous intelligence platform for tasks, finance, and research.**
+> **Your autonomous intelligence platform for tasks, finance, and research.**
+
+Nexus is a self-hosted AI assistant that unifies task management, financial tracking, and research workflows into a single, privacy-first system. Built for technical users who value data sovereignty and production-grade reliability.
+
+---
+
+## ✨ Key Features at a Glance
+
+### 📋 Intelligent Task Management
+- Natural language task creation ("Remind me to review the budget next Tuesday")
+- Smart scheduling with conflict detection
+- Recurring tasks with flexible patterns (daily, weekly, custom cron)
+- Priority-based auto-scheduling
+
+### 💰 Financial Intelligence
+- Receipt OCR with automatic categorization (ML-powered)
+- Multi-account transaction tracking
+- Budget forecasts and spending alerts
+- Investment portfolio analysis (coming soon)
+
+### 📚 Research & Knowledge Base
+- Personal wiki with semantic search (pgvector)
+- Automated research workflows
+- Academic paper discovery (arXiv integration)
+- Cross-reference linking between notes
+
+### 🔒 Security & Privacy
+- Self-hosted (complete data sovereignty)
+- Multi-factor authentication (TOTP)
+- Field-level encryption for sensitive data
+- Comprehensive audit logging
+
+### 🌐 Multi-Interface Access
+- **CLI** - Primary interface with rich formatting
+- **Web Dashboard** - Real-time updates via WebSocket
+- **API** - RESTful API with interactive docs
+- **SMS/Email** - Remote task creation (optional)
+- **Voice** - Voice interface (planned Phase 5)
+
+---
 
 ## Overview
 
@@ -22,21 +60,29 @@ Nexus is a self-hosted, privacy-first AI assistant that helps you manage:
 - ✅ Proactive intelligence (monitors, alerts, suggests)
 - ✅ Production-grade (MFA, encryption, backups, monitoring)
 
-## Quick Start
+## ⚡ Quick Start
+
+Get Nexus running in under 5 minutes with the automated setup script.
 
 ### Prerequisites
 
-- Python 3.11+
-- PostgreSQL 16+ with pgvector
-- Redis 7.2+
-- MinIO (or S3-compatible storage)
+Ensure you have these installed:
+
+- **Python 3.11+** - [Download](https://www.python.org/downloads/)
+- **Docker & Docker Compose** - [Install Docker](https://docs.docker.com/get-docker/)
+- **Git** - For cloning the repository
+
+> **Note:** The setup script will automatically provision PostgreSQL 16 (with pgvector), Redis 7.2, and MinIO via Docker Compose.
 
 ### Installation
 
 ```bash
-# Clone repository
+# Clone the repository
 git clone https://github.com/calvin/nexus.git
 cd nexus
+
+# Run automated setup (creates venv, installs deps, starts services)
+./scripts/setup.sh
 
 # Create virtual environment
 python3.11 -m venv venv
@@ -207,11 +253,17 @@ Nexus is a personal project, but contributions are welcome! Please:
 
 MIT License - see [LICENSE](LICENSE) for details.
 
-## Support
+## 📞 Support & Community
 
-- 📧 Email: calvinbrady8@gmail.com
-- 🐛 Issues: [GitHub Issues](https://github.com/calvin/nexus/issues)
-- 📖 Docs: [Documentation](docs/)
+For questions, bug reports, or feature requests:
+
+- 📖 **Documentation** - Check `docs/`, `SPECIFICATION.md`, and `QUICKSTART.md` first
+- 💬 **Discussions** - Open a [GitHub Discussion](https://github.com/calvin/nexus/discussions) for general questions
+- 🐛 **Bug Reports** - Use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.md)
+- ✨ **Feature Requests** - Use the [feature request template](.github/ISSUE_TEMPLATE/feature_request.md)
+- 📧 **Private Contact** - Email: calvinbrady8@gmail.com
+
+> **Note:** This is a personal project maintained during free time. Response times may vary, but all issues and PRs are reviewed.
 
 ---
 
