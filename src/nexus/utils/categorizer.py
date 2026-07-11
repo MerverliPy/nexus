@@ -13,6 +13,7 @@ from sklearn.pipeline import Pipeline
 MODEL_DIR = Path.home() / ".nexus" / "models"
 MODEL_PATH = MODEL_DIR / "category_model.joblib"
 CORRECTIONS_PATH = Path.home() / ".nexus" / "category_corrections.json"
+PREDICTION_LOG_PATH = Path.home() / ".nexus" / "category_prediction_log.json"
 
 # Default training data (bootstrapped seed)
 SEED_DATA: list[tuple[str, str]] = [
@@ -255,6 +256,8 @@ def predict_category(vendor: str) -> tuple[str | None, float]:
     confidence = float(probs[best_idx])
     category = model.classes_[best_idx]
 
+    _log_prediction(vendor, category, confidence)
+
     if confidence < 0.3:
         return None, confidence
 
@@ -262,10 +265,13 @@ def predict_category(vendor: str) -> tuple[str | None, float]:
 
 
 def record_correction(vendor: str, correct_category: str) -> None:
-    """Record a user correction and retrain the model."""
+    # Record correction for model training
     corrections = _load_corrections()
     corrections.append((vendor, correct_category))
     _save_corrections(corrections)
+
+    # Log to accuracy tracker
+    _log_correction(vendor, correct_category)
 
     # Retrain
     all_data = SEED_DATA + corrections
@@ -281,3 +287,126 @@ def record_correction(vendor: str, correct_category: str) -> None:
 def get_available_categories() -> list[str]:
     """Get the list of categories the model knows about."""
     return sorted({c for _, c in SEED_DATA})
+
+
+# ── Accuracy tracking ────────────────────────────────────────────────
+
+_MAX_LOG_ENTRIES = 2000
+
+
+def _load_prediction_log() -> list[dict]:
+    if PREDICTION_LOG_PATH.exists():
+        try:
+            return json.loads(PREDICTION_LOG_PATH.read_text())
+        except (json.JSONDecodeError, OSError):
+            pass
+    return []
+
+
+def _save_prediction_log(log: list[dict]) -> None:
+    PREDICTION_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    PREDICTION_LOG_PATH.write_text(json.dumps(log, indent=2))
+
+
+def _log_prediction(vendor: str, predicted: str | None, confidence: float) -> None:
+    """Record a prediction event for later accuracy tracking."""
+    log = _load_prediction_log()
+    log.append(
+        {
+            "vendor": vendor,
+            "predicted": predicted,
+            "confidence": round(confidence, 4),
+            "corrected": None,
+            "timestamp": _now_iso(),
+        }
+    )
+    if len(log) > _MAX_LOG_ENTRIES:
+        log = log[-_MAX_LOG_ENTRIES:]
+    _save_prediction_log(log)
+
+
+def _log_correction(vendor: str, correct_category: str) -> None:
+    """Link a correction to the most recent unmatched prediction for this vendor."""
+    log = _load_prediction_log()
+    # Find the most recent prediction for this vendor that hasn't been corrected yet
+    for entry in reversed(log):
+        if entry["vendor"] == vendor and entry["corrected"] is None:
+            entry["corrected"] = correct_category
+            _save_prediction_log(log)
+            return
+    # No matching prediction found — record as a standalone correction
+    log.append(
+        {
+            "vendor": vendor,
+            "predicted": None,
+            "confidence": 0.0,
+            "corrected": correct_category,
+            "timestamp": _now_iso(),
+        }
+    )
+    if len(log) > _MAX_LOG_ENTRIES:
+        log = log[-_MAX_LOG_ENTRIES:]
+    _save_prediction_log(log)
+
+
+def _now_iso() -> str:
+    from datetime import datetime, timezone
+
+    return datetime.now(timezone.utc).isoformat()
+
+
+def get_accuracy_stats(days: int = 30) -> dict:
+    """Compute categorizer accuracy metrics from the prediction log.
+
+    Returns a dict with:
+      - total_predictions: total prediction events logged
+      - total_corrections: total corrections logged (with or without matching prediction)
+      - matched_pairs: prediction-correction pairs where both exist
+      - correct: number of pairs where predicted == corrected
+      - accuracy: correct / matched_pairs (0.0 if no matched pairs)
+      - per_category: {category: {total, correct, accuracy}} for each predicted category
+      - recent_days: number of days of history analyzed
+    """
+    from datetime import datetime, timedelta, timezone
+
+    log = _load_prediction_log()
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+
+    recent = []
+    for entry in log:
+        try:
+            ts = datetime.fromisoformat(entry["timestamp"])
+            if ts >= cutoff:
+                recent.append(entry)
+        except (ValueError, KeyError):
+            continue
+
+    total_predictions = sum(1 for e in recent if e.get("predicted") is not None)
+    total_corrections = sum(1 for e in recent if e.get("corrected") is not None)
+
+    # Pairs where we have both prediction and correction
+    matched = [e for e in recent if e.get("predicted") is not None and e.get("corrected") is not None]
+    correct = sum(1 for e in matched if e["predicted"] == e["corrected"])
+
+    # Per-category breakdown
+    per_category: dict[str, dict[str, int | float]] = {}
+    for e in matched:
+        cat = e["predicted"]
+        if cat not in per_category:
+            per_category[cat] = {"total": 0, "correct": 0, "accuracy": 0.0}
+        per_category[cat]["total"] += 1
+        if e["predicted"] == e["corrected"]:
+            per_category[cat]["correct"] += 1
+
+    for cat, stats in per_category.items():
+        stats["accuracy"] = round(stats["correct"] / stats["total"], 3) if stats["total"] > 0 else 0.0
+
+    return {
+        "total_predictions": total_predictions,
+        "total_corrections": total_corrections,
+        "matched_pairs": len(matched),
+        "correct": correct,
+        "accuracy": round(correct / len(matched), 3) if matched else 0.0,
+        "per_category": per_category,
+        "recent_days": days,
+    }

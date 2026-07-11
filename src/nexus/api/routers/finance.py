@@ -17,7 +17,7 @@ from nexus.database import get_db
 from nexus.models.finance import Account, Transaction
 from nexus.models.user import User
 from nexus.services import forecasting
-from nexus.utils.categorizer import predict_category, record_correction
+from nexus.utils.categorizer import get_accuracy_stats, predict_category, record_correction
 from nexus.utils.dependencies import get_current_user
 from nexus.utils.ocr import process_receipt
 from nexus.utils.storage import ensure_buckets, upload_receipt_bytes
@@ -688,3 +688,12 @@ async def spending_forecast(
     """Forecast spending per category for the next N days based on history."""
     result = await forecasting.forecast_spending(db, user.id, horizon_days=horizon_days)
     return forecasting.forecast_to_dict(result)
+
+
+@router.get("/analytics/categorizer-accuracy")
+async def categorizer_accuracy(
+    days: int = Query(30, ge=1, le=365),
+    user: User = Depends(get_current_user),
+):
+    """Return ML categorizer accuracy metrics for the last N days."""
+    return get_accuracy_stats(days=days)
