@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Actions CI workflow
 - Contributing guidelines
 - Issue and PR templates
+- Budget forecasting with ML — sklearn per-category regression + 95% CI + CLI (`nexus finance forecast`) + API (`GET /finance/analytics/forecast`) + 8 tests
 
 ### Infrastructure
 - Docker Compose setup with 6 services

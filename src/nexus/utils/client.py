@@ -525,6 +525,14 @@ def import_csv(filepath: str) -> dict:
     raise APIError(resp)
 
 
+def forecast_spending(horizon_days: int = 30) -> dict:
+    """Get spending forecast."""
+    resp = _request("GET", f"/api/v1/finance/analytics/forecast?horizon_days={horizon_days}")
+    if resp.status_code == 200:
+        return resp.json()
+    raise APIError(resp)
+
+
 # ── Error ──────────────────────────────────────────────────────────────
 
 

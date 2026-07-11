@@ -16,6 +16,7 @@ from nexus.api.ws_manager import manager
 from nexus.database import get_db
 from nexus.models.finance import Account, Transaction
 from nexus.models.user import User
+from nexus.services import forecasting
 from nexus.utils.categorizer import predict_category, record_correction
 from nexus.utils.dependencies import get_current_user
 from nexus.utils.ocr import process_receipt
@@ -673,3 +674,17 @@ async def correct_transaction_category(
     await manager.broadcast(user.id, "transaction_updated", tx_data)
 
     return {"status": "corrected", "transaction": tx_data}
+
+
+# ── Forecasting ─────────────────────────────────────────────────────────
+
+
+@router.get("/analytics/forecast")
+async def spending_forecast(
+    horizon_days: int = Query(30, ge=1, le=365),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Forecast spending per category for the next N days based on history."""
+    result = await forecasting.forecast_spending(db, user.id, horizon_days=horizon_days)
+    return forecasting.forecast_to_dict(result)

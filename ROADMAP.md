@@ -32,7 +32,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 | **2 — Finance** | ✅ ~85% | CRUD + CSV import + analytics + OCR + ML categorization all wired. |
 | **3 — Security/Prod** | 🟡 ~45% | All W9-10 done. W11-12: Prometheus /metrics, backup+restore scripts, systemd templates, circuit breaker, LLM cost model all in place. |
 | **4 — Research** | 🟡 ~70% | Notes, wiki-links, hybrid search, arXiv, credibility scoring, LLM plans, export — all live & tested. |
-| **5 — Advanced** | 🟡 ~40% | Portfolio + net-worth + smart notification bundling (priority queue, digests, Telegram) live & tested. Voice/SMS/PWA/ML-forecast remain. |
+| **5 — Advanced** | 🟡 ~55% | Portfolio + net-worth + smart notification bundling + ML budget forecasting all live & tested. Voice/SMS/PWA remain. |
 
 **Two systemic gaps cut across phases:**
 1. ~~**No Celery workers**~~ ✅ **RESOLVED** — `src/nexus/workers/` now has `app.py` (Celery + beat schedule) and `tasks.py` (recurring-task generation, ML retraining, DB backup, session cleanup). Redis-brokered; tasks auto-discovered.
@@ -549,7 +549,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 - [x] Rebalancing recommendations *(drift vs target allocation → buy/sell/hold + amounts)*
 - [x] Net worth tracking over time *(compute_net_worth + NetWorthSnapshot model + snapshot endpoint)*
 - [x] Smart notification bundling *(priority queue urgent/normal/digest; hourly+daily Celery digests; Telegram delivery w/ graceful fallback; prefs; 9 tests)*
-- [ ] Budget forecasting with ML *(deferred)*
+- [x] Budget forecasting with ML *(sklearn linear regression per category, 30-day horizon, 95% CI, CLI + API + 8 tests)*
 
 #### Tasks
 1. **Portfolio models & API** (6h)

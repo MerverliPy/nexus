@@ -543,6 +543,39 @@ def finance_categorize(transaction_id: int, category: str):
         sys.exit(1)
 
 
+@finance.command("forecast")
+@click.option("--horizon", type=int, default=30, help="Forecast horizon in days (1-365)")
+def finance_forecast(horizon: int):
+    """Forecast spending per category for the next N days."""
+    if not api.logged_in():
+        console.print("[red]Not logged in. Run 'nexus auth login' first.[/red]")
+        sys.exit(1)
+    try:
+        data = api.forecast_spending(horizon_days=horizon)
+        console.print(f"[bold]Spending Forecast ({data['horizon_days']} days)[/bold]")
+        console.print(
+            f"  Total: [yellow]${data['total_predicted_amount']:,.2f}[/yellow] "
+            f"({data['currency']})"
+        )
+        console.print(
+            f"  Range: ${data['total_confidence_lower']:,.2f} - "
+            f"${data['total_confidence_upper']:,.2f}"
+        )
+        table = Table("Category", "Prediction", "Range", "Method", "Points")
+        for f in data["category_forecasts"]:
+            table.add_row(
+                f["category"],
+                f"${f['predicted_amount']:,.2f}",
+                f"${f['confidence_lower']:,.2f} - ${f['confidence_upper']:,.2f}",
+                f["method"],
+                str(f["data_points"]),
+            )
+        console.print(table)
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
+
+
 # ── Note ───────────────────────────────────────────────────────────────────
 
 
