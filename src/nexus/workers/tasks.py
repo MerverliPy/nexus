@@ -188,3 +188,50 @@ async def _cleanup_expired_sessions() -> dict:
 
     logger.info("cleanup_expired_sessions", removed=removed)
     return {"removed": removed}
+
+
+# ── Notification digests ────────────────────────────────────────────────────
+
+
+@app.task(name="nexus.workers.tasks.send_notification_digests")
+def send_notification_digests() -> dict:
+    """Bundle and send pending 'normal'-priority notifications for all users."""
+    return _run_async(_send_digests(priority="normal"))
+
+
+@app.task(name="nexus.workers.tasks.send_daily_summary")
+def send_daily_summary() -> dict:
+    """Bundle and send pending 'digest'-priority notifications for all users."""
+    return _run_async(_send_digests(priority="digest"))
+
+
+async def _send_digests(priority: str) -> dict:
+    from nexus.models.notification import Notification
+    from nexus.services.notifications import bundle_and_send
+
+    session, engine = await _session()
+    users_sent = 0
+    total_bundled = 0
+    try:
+        async with session:
+            # Distinct users with pending notifications of this priority
+            result = await session.execute(
+                select(Notification.user_id)
+                .where(
+                    Notification.status == "pending",
+                    Notification.priority == priority,
+                )
+                .distinct()
+            )
+            user_ids = [row[0] for row in result.all()]
+            for uid in user_ids:
+                res = await bundle_and_send(session, uid, priority_filter=priority)
+                total_bundled += res["bundled"]
+                if res["sent"]:
+                    users_sent += 1
+            await session.commit()
+    finally:
+        await engine.dispose()
+
+    logger.info("send_digests", priority=priority, users=users_sent, bundled=total_bundled)
+    return {"priority": priority, "users_sent": users_sent, "bundled": total_bundled}

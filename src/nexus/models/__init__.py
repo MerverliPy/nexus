@@ -4,6 +4,7 @@ from nexus.models.automation import AuditLog, Automation
 from nexus.models.base import BaseModel, TimestampMixin
 from nexus.models.finance import Account, Transaction
 from nexus.models.llm_usage import LLMUsage
+from nexus.models.notification import Notification, NotificationPreference
 from nexus.models.portfolio import Holding, NetWorthSnapshot, Portfolio
 from nexus.models.research import Note, NoteLink, ResearchProject
 from nexus.models.session import RefreshSession
@@ -27,4 +28,6 @@ __all__ = [
     "Portfolio",
     "Holding",
     "NetWorthSnapshot",
+    "Notification",
+    "NotificationPreference",
 ]

@@ -847,6 +847,49 @@ def portfolio_networth():
 # ── System ─────────────────────────────────────────────────────────────────
 
 
+@cli.group()
+def notify():
+    """Notification commands."""
+    pass
+
+
+@notify.command("send")
+@click.argument("title")
+@click.option("--body", default=None, help="Notification body")
+@click.option("--priority", default="normal", help="urgent, normal, or digest")
+def notify_send(title: str, body: str | None, priority: str):
+    """Enqueue a notification (urgent = immediate, else bundled)."""
+    if not api.logged_in():
+        console.print("[yellow]Not logged in.[/yellow]")
+        sys.exit(1)
+    try:
+        result = api.create_notification(title, body, priority)
+        console.print(
+            f"[green]Notification #{result['id']} ({result['priority']}) "
+            f"→ {result['status']}[/green]"
+        )
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
+
+
+@notify.command("digest")
+@click.option("--priority", default=None, help="Filter: normal or digest")
+def notify_digest(priority: str | None):
+    """Bundle and send pending notifications now."""
+    if not api.logged_in():
+        console.print("[yellow]Not logged in.[/yellow]")
+        sys.exit(1)
+    try:
+        result = api.send_digest(priority)
+        console.print(
+            f"[green]Bundled {result['bundled']} notification(s); sent={result['sent']}[/green]"
+        )
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
+
+
 @cli.command()
 def status():
     """Show Nexus system status."""

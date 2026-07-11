@@ -48,4 +48,12 @@ app.conf.beat_schedule = {
         "task": "nexus.workers.tasks.run_backup",
         "schedule": crontab(minute=0, hour=3),  # daily at 03:00 UTC
     },
+    "hourly-notification-digest": {
+        "task": "nexus.workers.tasks.send_notification_digests",
+        "schedule": crontab(minute=0, hour="*"),  # hourly (normal-priority bundling)
+    },
+    "daily-notification-summary": {
+        "task": "nexus.workers.tasks.send_daily_summary",
+        "schedule": crontab(minute=0, hour=9),  # daily 09:00 UTC (digest-priority)
+    },
 }

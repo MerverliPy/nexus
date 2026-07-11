@@ -355,6 +355,29 @@ def net_worth() -> dict:
     raise APIError(resp)
 
 
+# ── Notification Commands ───────────────────────────────────────────────
+
+
+def create_notification(title: str, body: str | None = None, priority: str = "normal") -> dict:
+    """Enqueue a notification."""
+    payload: dict = {"title": title, "priority": priority}
+    if body:
+        payload["body"] = body
+    resp = _request("POST", "/api/v1/notifications", json_body=payload)
+    if resp.status_code == 201:
+        return resp.json()
+    raise APIError(resp)
+
+
+def send_digest(priority: str | None = None) -> dict:
+    """Bundle and send pending notifications now."""
+    qs = f"?priority={priority}" if priority else ""
+    resp = _request("POST", f"/api/v1/notifications/digest{qs}")
+    if resp.status_code == 200:
+        return resp.json()
+    raise APIError(resp)
+
+
 # ── Task Commands ──────────────────────────────────────────────────────
 
 
