@@ -88,15 +88,55 @@ def whoami():
 
 
 @auth.command()
-def logout():
-    """Logout by removing stored tokens."""
+@click.option("--device", type=int, default=None, help="Revoke a specific session by ID")
+@click.option("--all", "all_sessions", is_flag=True, default=False, help="Revoke all sessions")
+def logout(device: int | None, all_sessions: bool):
+    """Logout — remove local tokens and optionally revoke server sessions."""
     from nexus.utils.client import TOKEN_FILE
+
+    if device is not None:
+        try:
+            result = api.revoke_session(device)
+            console.print(f"[green]{result['detail']}[/green]")
+        except APIError as e:
+            console.print(f"[red]{e.detail}[/red]")
+    if all_sessions:
+        try:
+            result = api.revoke_all_sessions()
+            console.print(f"[green]{result['detail']}[/green]")
+        except APIError as e:
+            console.print(f"[red]{e.detail}[/red]")
 
     if TOKEN_FILE.exists():
         TOKEN_FILE.unlink()
         console.print("[green]Logged out.[/green]")
     else:
         console.print("[yellow]Not logged in.[/yellow]")
+
+
+@auth.command("sessions")
+def list_auth_sessions():
+    """List active login sessions."""
+    if not api.logged_in():
+        console.print("[yellow]Not logged in.[/yellow]")
+        sys.exit(1)
+    try:
+        result = api.list_sessions()
+        table = Table("ID", "IP", "User-Agent", "Last Used", "Current")
+        for s in result.get("sessions", []):
+            is_current = "★" if s.get("is_current") else ""
+            table.add_row(
+                str(s["id"]),
+                s.get("ip_address", "") or "-",
+                (s.get("user_agent", "") or "")[:50],
+                s.get("last_used_at", ""),
+                is_current,
+            )
+        console.print(table)
+        console.print(f"Total: {result.get('total', 0)} session(s)")
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
 
 
 @auth.group("mfa")

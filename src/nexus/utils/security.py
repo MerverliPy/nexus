@@ -44,10 +44,14 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
 
 
 def create_refresh_token(data: dict) -> str:
-    """Create a long-lived JWT refresh token."""
+    """Create a long-lived JWT refresh token with a unique jti claim."""
+    import secrets as _secrets
+
     to_encode = data.copy()
     expire = datetime.now(UTC) + timedelta(days=settings.nexus_refresh_token_expire_days)
-    to_encode.update({"exp": expire, "type": "refresh"})
+    to_encode.update(
+        {"exp": expire, "type": "refresh", "jti": _secrets.token_hex(16)}
+    )
     return jwt.encode(to_encode, settings.nexus_secret_key, algorithm="HS256")
 
 

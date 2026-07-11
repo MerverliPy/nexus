@@ -190,6 +190,33 @@ def mfa_disable(password: str, code: str | None = None) -> dict:
     raise APIError(resp)
 
 
+# ── Session Commands ────────────────────────────────────────────────────
+
+
+def list_sessions() -> dict:
+    """List active refresh-token sessions."""
+    resp = _request("GET", "/api/v1/auth/sessions")
+    if resp.status_code == 200:
+        return resp.json()
+    raise APIError(resp)
+
+
+def revoke_session(session_id: int) -> dict:
+    """Revoke a single session by ID."""
+    resp = _request("DELETE", f"/api/v1/auth/sessions/{session_id}")
+    if resp.status_code == 200:
+        return resp.json()
+    raise APIError(resp)
+
+
+def revoke_all_sessions() -> dict:
+    """Revoke all sessions for the current user (logout everywhere)."""
+    resp = _request("DELETE", "/api/v1/auth/sessions")
+    if resp.status_code == 200:
+        return resp.json()
+    raise APIError(resp)
+
+
 # ── Task Commands ──────────────────────────────────────────────────────
 
 

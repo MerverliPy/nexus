@@ -1,4 +1,4 @@
-"""Authentication router — register, login, refresh, and TOTP MFA."""
+"""Authentication router — register, login, refresh, TOTP MFA, and session management."""
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr
@@ -8,6 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from nexus.database import get_db
 from nexus.models.user import User
 from nexus.services.audit import log as audit_log  # noqa: N811
+from nexus.services.sessions import (
+    create_session,
+    list_sessions,
+    revoke_all_sessions,
+    revoke_session,
+    rotate_session,
+)
 from nexus.utils import ratelimit
 from nexus.utils.dependencies import get_current_user
 from nexus.utils.security import (
@@ -88,6 +95,27 @@ class MfaDisableRequest(BaseModel):
     code: str | None = None
 
 
+class SessionResponse(BaseModel):
+    id: int
+    ip_address: str | None
+    user_agent: str | None
+    device_name: str | None
+    last_used_at: str  # ISO 8601
+    is_current: bool = False  # marked by the caller
+
+    model_config = {"from_attributes": True}
+
+
+class SessionsListResponse(BaseModel):
+    sessions: list[SessionResponse]
+    total: int
+
+
+class RevokeSessionResponse(BaseModel):
+    detail: str
+    revoked: int  # number of sessions removed
+
+
 # ── Helpers ──────────────────────────────────────────────────────────────
 
 
@@ -144,6 +172,12 @@ async def register(request: Request, body: RegisterRequest, db: AsyncSession = D
 
     access_token = create_access_token({"sub": str(user.id)})
     refresh_token = create_refresh_token({"sub": str(user.id)})
+
+    # Track initial session
+    payload = decode_token(refresh_token)
+    jti = payload["jti"] if payload else None
+    if jti:
+        await create_session(db, user.id, jti, ip_address=ip, user_agent=ua)
 
     return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
@@ -237,12 +271,21 @@ async def login(request: Request, body: LoginRequest, db: AsyncSession = Depends
     access_token = create_access_token({"sub": str(user.id)})
     refresh_token = create_refresh_token({"sub": str(user.id)})
 
+    # Track new session
+    payload = decode_token(refresh_token)
+    jti = payload["jti"] if payload else None
+    if jti:
+        await create_session(
+            db, user.id, jti, ip_address=ip, user_agent=ua, device_name=ua
+        )
+
     return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
 
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh(body: RefreshRequest):
-    """Issue a new access token using a refresh token."""
+async def refresh(request: Request, body: RefreshRequest, db: AsyncSession = Depends(get_db)):
+    """Issue a new access token using a refresh token, with session rotation."""
+    ip, ua = _capture(request)
     payload = decode_token(body.refresh_token)
 
     if payload is None:
@@ -264,16 +307,84 @@ async def refresh(body: RefreshRequest):
             detail="Token missing subject",
         )
 
-    access_token = create_access_token({"sub": user_id})
-    refresh_token = create_refresh_token({"sub": user_id})
+    old_jti = payload.get("jti")
 
-    return TokenResponse(access_token=access_token, refresh_token=refresh_token)
+    access_token = create_access_token({"sub": user_id})
+    new_refresh_token = create_refresh_token({"sub": user_id})
+
+    new_payload = decode_token(new_refresh_token)
+    new_jti = new_payload["jti"] if new_payload else None
+    if new_jti:
+        await rotate_session(
+            db, old_jti=old_jti, new_jti=new_jti, ip_address=ip, user_agent=ua
+        )
+
+    return TokenResponse(access_token=access_token, refresh_token=new_refresh_token)
 
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(user: User = Depends(get_current_user)):
     """Return the currently authenticated user's profile."""
     return user
+
+
+# ── Session management endpoints ──────────────────────────────────────────
+
+
+@router.get("/sessions", response_model=SessionsListResponse)
+async def get_sessions(
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """List all active refresh-token sessions for the current user.
+
+    The bearer token used for this request is compared with each session's
+    stored refresh token; the matching session is flagged as ``is_current``.
+    """
+    sessions = await list_sessions(db, user.id)
+    ip, _ = _capture(request)
+
+    result: list[SessionResponse] = []
+    for s in sessions:
+        result.append(
+            SessionResponse(
+                id=s.id,
+                ip_address=str(s.ip_address) if s.ip_address else None,
+                user_agent=s.user_agent,
+                device_name=s.device_name,
+                last_used_at=s.last_used_at.isoformat() if s.last_used_at else "",
+                is_current=(str(s.ip_address) if s.ip_address else None) == ip,
+            )
+        )
+
+    return SessionsListResponse(sessions=result, total=len(result))
+
+
+@router.delete("/sessions/{session_id}", response_model=RevokeSessionResponse)
+async def delete_session(
+    session_id: int,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Revoke a specific session (logs out that device)."""
+    ok = await revoke_session(db, session_id, user.id)
+    if not ok:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found",
+        )
+    return RevokeSessionResponse(detail="Session revoked", revoked=1)
+
+
+@router.delete("/sessions", response_model=RevokeSessionResponse)
+async def delete_all_sessions(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Revoke all sessions for the current user (logout everywhere)."""
+    count = await revoke_all_sessions(db, user.id)
+    return RevokeSessionResponse(detail=f"{count} sessions revoked", revoked=count)
 
 
 # ── MFA endpoints ──────────────────────────────────────────────────────────
