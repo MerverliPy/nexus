@@ -31,7 +31,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 | **1 — Foundation** | ✅ ~95% | Infra, JWT auth, tasks, Next.js web, WebSocket live. Celery worker now generates recurring task instances. |
 | **2 — Finance** | ✅ ~85% | CRUD + CSV import + analytics + OCR + ML categorization all wired. |
 | **3 — Security/Prod** | 🟡 ~45% | All W9-10 done. W11-12: Prometheus /metrics, backup+restore scripts, systemd templates, circuit breaker, LLM cost model all in place. |
-| **4 — Research** | 🔴 models only | Models exist; no router registered; CLI `note` commands are TODO stubs. |
+| **4 — Research** | 🟡 ~40% | Notes + projects router, wiki-links, hybrid search (semantic+FTS), real CLI live. |
 | **5 — Advanced** | 🔴 0% | Not started (`Automation` model exists, no router). |
 
 **Two systemic gaps cut across phases:**
@@ -382,12 +382,12 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 
 ### Week 13-14: Personal Wiki & Semantic Search
 
-#### Deliverables — 🔴 MODELS ONLY
-- [~] Markdown notes with YAML frontmatter *(Note model exists; no router; CLI note commands are TODO stubs)*
-- [ ] Bidirectional links `[[note-title]]` *(NoteLink model exists; no parsing/creation logic)*
-- [ ] Semantic search via pgvector *(sentence-transformers declared, unused; no search endpoint)*
-- [~] Research project workspaces *(ResearchProject model exists; no router)*
-- [ ] Note versioning (git-backed)
+#### Deliverables — 🟡 MOSTLY DONE
+- [x] Markdown notes with YAML frontmatter *(router: CRUD + list; CLI: create/search/list)*
+- [x] Bidirectional links `[[note-title]]` *(extract_wikilinks, backlinks endpoint, self-link ignored)*
+- [x] Semantic search via pgvector *(hybrid: pgvector cosine distance when embeddings present → graceful FTS fallback; pluggable provider: OpenAI or sentence-transformers)*
+- [x] Research project workspaces *(router: CRUD + list)*
+- [ ] Note versioning (git-backed) *(deferred)*
 
 #### Tasks
 1. **Note models & API** (6h)
@@ -607,7 +607,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 | **Phase 1** | 1-4 | 60 | ✅ ~95% | Infrastructure, Task Management (CLI + Web) |
 | **Phase 2** | 5-8 | 76 | ✅ ~85% | Financial Intelligence (Transactions, OCR, ML) |
 | **Phase 3** | 9-12 | 64 | 🟡 ~45% | Security & Production (MFA, Monitoring, Backups) |
-| **Phase 4** | 13-16 | 76 | 🔴 models only | Research & Knowledge (Wiki, Semantic Search) |
+| **Phase 4** | 13-16 | 76 | 🟡 ~40% | Research & Knowledge (Wiki, Semantic Search) |
 | **Phase 5** | 17-20 | 68 | 🔴 0% | Advanced Features (Voice, SMS, Portfolio) |
 | **Total** | 20 | **344** | 🟡 ~40% | Full-featured Personal AI System |
 
