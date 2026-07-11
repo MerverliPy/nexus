@@ -32,7 +32,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 | **2 — Finance** | ✅ ~85% | CRUD + CSV import + analytics + OCR + ML categorization all wired. |
 | **3 — Security/Prod** | 🟡 ~45% | All W9-10 done. W11-12: Prometheus /metrics, backup+restore scripts, systemd templates, circuit breaker, LLM cost model all in place. |
 | **4 — Research** | 🟡 ~70% | Notes, wiki-links, hybrid search, arXiv, credibility scoring, LLM plans, export — all live & tested. |
-| **5 — Advanced** | 🟡 ~25% | Portfolio tracking, analytics, rebalancing, net-worth all live & tested. Voice/SMS/PWA not started. |
+| **5 — Advanced** | 🟡 ~40% | Portfolio + net-worth + smart notification bundling (priority queue, digests, Telegram) live & tested. Voice/SMS/PWA/ML-forecast remain. |
 
 **Two systemic gaps cut across phases:**
 1. ~~**No Celery workers**~~ ✅ **RESOLVED** — `src/nexus/workers/` now has `app.py` (Celery + beat schedule) and `tasks.py` (recurring-task generation, ML retraining, DB backup, session cleanup). Redis-brokered; tasks auto-discovered.
@@ -548,7 +548,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 - [x] Portfolio tracking (stocks, crypto, bonds) *(Portfolio/Holding models, CRUD router, pluggable market-data w/ graceful fallback)*
 - [x] Rebalancing recommendations *(drift vs target allocation → buy/sell/hold + amounts)*
 - [x] Net worth tracking over time *(compute_net_worth + NetWorthSnapshot model + snapshot endpoint)*
-- [ ] Smart notification bundling *(deferred)*
+- [x] Smart notification bundling *(priority queue urgent/normal/digest; hourly+daily Celery digests; Telegram delivery w/ graceful fallback; prefs; 9 tests)*
 - [ ] Budget forecasting with ML *(deferred)*
 
 #### Tasks
@@ -609,7 +609,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 | **Phase 2** | 5-8 | 76 | ✅ ~85% | Financial Intelligence (Transactions, OCR, ML) |
 | **Phase 3** | 9-12 | 64 | 🟡 ~45% | Security & Production (MFA, Monitoring, Backups) |
 | **Phase 4** | 13-16 | 76 | 🟡 ~70% | Research & Knowledge (Wiki, Semantic Search) |
-| **Phase 5** | 17-20 | 68 | 🟡 ~25% | Advanced Features (Voice, SMS, Portfolio) |
+| **Phase 5** | 17-20 | 68 | 🟡 ~40% | Advanced Features (Voice, SMS, Portfolio) |
 | **Total** | 20 | **344** | 🟡 ~40% | Full-featured Personal AI System |
 
 *Note: Total is less than 480 due to removing optional tasks (LayoutLM, advanced features). Buffer of 136 hours for debugging, refactoring, and unexpected issues.*
