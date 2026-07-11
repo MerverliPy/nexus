@@ -134,16 +134,16 @@ def register(email: str, password: str) -> dict:
     raise APIError(resp)
 
 
-def login(email: str, password: str) -> dict:
-    """Login and store tokens."""
+def login(email: str, password: str, totp_code: str | None = None) -> dict:
+    """Login and store tokens. Supply ``totp_code`` when MFA is enabled."""
+    body: dict = {"email": email, "password": password}
+    if totp_code:
+        body["totp_code"] = totp_code
     resp = _request(
         "POST",
         "/api/v1/auth/login",
         auth=False,
-        json_body={
-            "email": email,
-            "password": password,
-        },
+        json_body=body,
     )
     if resp.status_code == 200:
         data = resp.json()
@@ -155,6 +155,36 @@ def login(email: str, password: str) -> dict:
 def get_me() -> dict:
     """Get current user info."""
     resp = _request("GET", "/api/v1/auth/me")
+    if resp.status_code == 200:
+        return resp.json()
+    raise APIError(resp)
+
+
+# ── MFA Commands ───────────────────────────────────────────────────────
+
+
+def mfa_enroll() -> dict:
+    """Begin MFA enrollment: returns secret, otpauth URI, and QR data URI."""
+    resp = _request("POST", "/api/v1/auth/mfa/enroll")
+    if resp.status_code == 200:
+        return resp.json()
+    raise APIError(resp)
+
+
+def mfa_verify(code: str) -> dict:
+    """Verify a TOTP code to activate MFA; returns one-time backup codes."""
+    resp = _request("POST", "/api/v1/auth/mfa/verify", json_body={"code": code})
+    if resp.status_code == 200:
+        return resp.json()
+    raise APIError(resp)
+
+
+def mfa_disable(password: str, code: str | None = None) -> dict:
+    """Disable MFA (requires the account password)."""
+    body: dict = {"password": password}
+    if code:
+        body["code"] = code
+    resp = _request("POST", "/api/v1/auth/mfa/disable", json_body=body)
     if resp.status_code == 200:
         return resp.json()
     raise APIError(resp)

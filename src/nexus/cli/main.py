@@ -50,12 +50,23 @@ def register(email: str, password: str):
 @auth.command()
 @click.option("--email", prompt=True, help="Email address")
 @click.option("--password", prompt=True, hide_input=True, help="Password")
-def login(email: str, password: str):
+@click.option("--code", default=None, help="TOTP or backup code (if MFA is enabled)")
+def login(email: str, password: str, code: str | None):
     """Login to Nexus."""
     try:
-        result = api.login(email, password)
+        result = api.login(email, password, totp_code=code)
         console.print(f"[green]{result['detail']}[/green]")
     except APIError as e:
+        # If the server requires a second factor, prompt for it and retry once.
+        if e.status_code == 401 and "MFA code required" in str(e.detail):
+            mfa_code = click.prompt("MFA code")
+            try:
+                result = api.login(email, password, totp_code=mfa_code)
+                console.print(f"[green]{result['detail']}[/green]")
+                return
+            except APIError as e2:
+                console.print(f"[red]{e2.detail}[/red]")
+                sys.exit(1)
         console.print(f"[red]{e.detail}[/red]")
         sys.exit(1)
 
@@ -70,6 +81,7 @@ def whoami():
         me = api.get_me()
         console.print(f"[bold]User:[/bold] {me['email']}")
         console.print(f"[bold]Active:[/bold] {'Yes' if me['is_active'] else 'No'}")
+        console.print(f"[bold]MFA:[/bold] {'Enabled' if me.get('mfa_enabled') else 'Disabled'}")
     except APIError as e:
         console.print(f"[red]{e.detail}[/red]")
         sys.exit(1)
@@ -85,6 +97,64 @@ def logout():
         console.print("[green]Logged out.[/green]")
     else:
         console.print("[yellow]Not logged in.[/yellow]")
+
+
+@auth.group("mfa")
+def auth_mfa():
+    """Multi-factor authentication (TOTP)."""
+    pass
+
+
+@auth_mfa.command("enable")
+def mfa_enable():
+    """Enable TOTP MFA: enroll, scan the QR, confirm a code, save backup codes."""
+    if not api.logged_in():
+        console.print("[yellow]Not logged in. Use 'nexus auth login' first.[/yellow]")
+        sys.exit(1)
+    try:
+        enroll = api.mfa_enroll()
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
+
+    console.print("[bold]Add this account to your authenticator app:[/bold]")
+    console.print(f"  Secret: [cyan]{enroll['secret']}[/cyan]")
+    console.print(f"  URI:    {enroll['otpauth_uri']}")
+    try:
+        import qrcode
+
+        qr = qrcode.QRCode(border=1)
+        qr.add_data(enroll["otpauth_uri"])
+        qr.make(fit=True)
+        qr.print_ascii(invert=True)
+    except Exception:  # noqa: BLE001 - QR is a convenience; secret/URI still shown
+        pass
+
+    code = click.prompt("Enter the 6-digit code from your app to confirm")
+    try:
+        result = api.mfa_verify(code)
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
+
+    console.print("[green]MFA enabled.[/green] Store these backup codes safely (shown once):")
+    for c in result["backup_codes"]:
+        console.print(f"  [yellow]{c}[/yellow]")
+
+
+@auth_mfa.command("disable")
+@click.option("--password", prompt=True, hide_input=True, help="Account password")
+def mfa_disable(password: str):
+    """Disable TOTP MFA (requires your account password)."""
+    if not api.logged_in():
+        console.print("[yellow]Not logged in.[/yellow]")
+        sys.exit(1)
+    try:
+        result = api.mfa_disable(password)
+        console.print(f"[green]{result['detail']}[/green]")
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
 
 
 # ── Task ───────────────────────────────────────────────────────────────────
