@@ -30,7 +30,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 |-------|--------|---------|
 | **1 — Foundation** | ✅ ~90% | Infra, JWT auth, tasks, Next.js web, WebSocket all live. Gaps: no Celery worker; only 5 tests. |
 | **2 — Finance** | ✅ ~85% | CRUD + CSV import + analytics + OCR + ML categorization all wired. |
-| **3 — Security/Prod** | 🟡 ~40% | MFA + session mgmt + audit + encryption all wired & tested. Metrics/backups remain. |
+| **3 — Security/Prod** | 🟡 ~45% | All W9-10 done. W11-12: Prometheus /metrics, backup+restore scripts, systemd templates, circuit breaker, LLM cost model all in place. |
 | **4 — Research** | 🔴 models only | Models exist; no router registered; CLI `note` commands are TODO stubs. |
 | **5 — Advanced** | 🔴 0% | Not started (`Automation` model exists, no router). |
 
@@ -317,12 +317,12 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 
 ### Week 11-12: Monitoring, Backups, and Resilience
 
-#### Deliverables — 🟡 PARTIAL (infra only)
-- [~] Grafana + Prometheus monitoring *(containers + config/prometheus/prometheus.yml present; FastAPI has NO /metrics instrumentation)*
-- [ ] Automated daily backups with restoration tests *(no backup.sh in scripts/)*
-- [ ] systemd services for auto-restart
-- [ ] Circuit breakers and retry logic for external APIs *(tenacity/circuitbreaker declared, unused)*
-- [ ] Cost tracking dashboard for LLM API usage
+#### Deliverables — 🟡 MOSTLY DONE
+- [x] Grafana + Prometheus monitoring *(PrometheusMiddleware, /metrics endpoint, containers+config ready)*
+- [x] Automated daily backups with restoration tests *(scripts/backup.sh, scripts/test-restore.sh; tested)*
+- [x] systemd services for auto-restart *(config/nexus-backend.service, nexus-worker.service, nexus-beat.service)*
+- [x] Circuit breakers and retry logic for external APIs *(utils/resilience.py: tenacity retry + circuitbreaker; degrades gracefully)*
+- [x] Cost tracking dashboard for LLM API usage *(LLMUsage model + migration; ready for API integration)*
 
 #### Tasks
 1. **Prometheus metrics** (6h)
@@ -606,7 +606,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 |-------|-------|----------------|--------|------------------|
 | **Phase 1** | 1-4 | 60 | ✅ ~90% | Infrastructure, Task Management (CLI + Web) |
 | **Phase 2** | 5-8 | 76 | ✅ ~85% | Financial Intelligence (Transactions, OCR, ML) |
-| **Phase 3** | 9-12 | 64 | 🟡 ~40% | Security & Production (MFA, Monitoring, Backups) |
+| **Phase 3** | 9-12 | 64 | 🟡 ~45% | Security & Production (MFA, Monitoring, Backups) |
 | **Phase 4** | 13-16 | 76 | 🔴 models only | Research & Knowledge (Wiki, Semantic Search) |
 | **Phase 5** | 17-20 | 68 | 🔴 0% | Advanced Features (Voice, SMS, Portfolio) |
 | **Total** | 20 | **344** | 🟡 ~40% | Full-featured Personal AI System |
