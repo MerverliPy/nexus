@@ -1,0 +1,28 @@
+# Nexus Celery Beat — systemd service unit
+# Copy to: /etc/systemd/system/nexus-beat.service
+#
+# Note: Celery beat is scaffolded (dependencies installed) but the worker
+# package (nexus.workers) is not yet implemented.
+
+[Unit]
+Description=Nexus Celery Beat Scheduler
+After=network-online.target nexus-backend.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=%u
+WorkingDirectory=%h/nexus
+EnvironmentFile=%h/nexus/.env
+ExecStart=%h/nexus/venv/bin/celery -A nexus.workers.app beat --loglevel=info
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=nexus-beat
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

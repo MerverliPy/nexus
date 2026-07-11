@@ -1,0 +1,29 @@
+# Nexus Celery Worker — systemd service unit
+# Copy to: /etc/systemd/system/nexus-worker.service
+#
+# Note: Celery worker package (nexus.workers) is scaffolded but not yet
+# implemented. This service file serves as documentation for the target
+# deployment topology.
+
+[Unit]
+Description=Nexus Celery Worker
+After=network-online.target nexus-backend.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=%u
+WorkingDirectory=%h/nexus
+EnvironmentFile=%h/nexus/.env
+ExecStart=%h/nexus/venv/bin/celery -A nexus.workers.app worker --loglevel=info
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=nexus-worker
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

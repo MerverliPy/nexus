@@ -1,0 +1,36 @@
+# Nexus Backend — systemd service unit
+# Copy to: /etc/systemd/system/nexus-backend.service
+#
+# Usage:
+#   sudo systemctl enable nexus-backend
+#   sudo systemctl start  nexus-backend
+#   sudo systemctl status nexus-backend
+
+[Unit]
+Description=Nexus Personal AI System — FastAPI backend
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+User=%u
+WorkingDirectory=%h/nexus
+EnvironmentFile=%h/nexus/.env
+ExecStart=%h/nexus/venv/bin/uvicorn nexus.api.main:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=nexus-backend
+
+# Security hardening
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/nexus %h/.nexus
+ReadOnlyPaths=/etc
+
+[Install]
+WantedBy=multi-user.target

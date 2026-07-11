@@ -3,12 +3,13 @@
 from contextlib import asynccontextmanager
 
 import structlog
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from nexus.api.routers import audit, auth, finance, tasks, ws
 from nexus.config import get_settings
 from nexus.database import Base, engine
+from nexus.utils.metrics import PrometheusMiddleware, metrics_endpoint
 
 settings = get_settings()
 logger = structlog.get_logger()
@@ -17,22 +18,15 @@ logger = structlog.get_logger()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan: startup and shutdown events."""
-    # Startup
     logger.info("nexus_startup", env=settings.nexus_env)
-
-    # Create database tables (in production, use Alembic migrations instead)
     if settings.nexus_env == "development":
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-
     yield
-
-    # Shutdown
     logger.info("nexus_shutdown")
     await engine.dispose()
 
 
-# Create FastAPI app
 app = FastAPI(
     title="Nexus Personal AI System",
     description="Autonomous intelligence platform for tasks, finance, and research",
@@ -42,10 +36,13 @@ app = FastAPI(
     redoc_url="/redoc" if settings.nexus_debug else None,
 )
 
+# Prometheus metrics middleware (first, to capture all requests)
+app.add_middleware(PrometheusMiddleware)
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],  # Next.js dev server
+    allow_origins=["http://localhost:3000", "http://localhost:3001"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -54,15 +51,19 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
-    """Root endpoint."""
     return {"service": "Nexus Personal AI System", "version": "0.1.0", "status": "operational"}
 
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint for monitoring."""
     # TODO: Add database connectivity check
     return {"status": "healthy", "env": settings.nexus_env}
+
+
+@app.get("/metrics")
+async def metrics(request: Request):
+    """Prometheus scrape endpoint."""
+    return await metrics_endpoint(request)
 
 
 app.include_router(auth.router)
