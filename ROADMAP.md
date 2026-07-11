@@ -30,7 +30,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 |-------|--------|---------|
 | **1 — Foundation** | ✅ ~90% | Infra, JWT auth, tasks, Next.js web, WebSocket all live. Gaps: no Celery worker; only 5 tests. |
 | **2 — Finance** | ✅ ~85% | CRUD + CSV import + analytics + OCR + ML categorization all wired. |
-| **3 — Security/Prod** | 🟡 ~30% | TOTP MFA + field encryption wired & tested. Audit/metrics/backups still scaffolded. |
+| **3 — Security/Prod** | 🟡 ~35% | TOTP MFA + audit logging + field encryption all wired & tested. Metrics/backups still scaffolded. |
 | **4 — Research** | 🔴 models only | Models exist; no router registered; CLI `note` commands are TODO stubs. |
 | **5 — Advanced** | 🔴 0% | Not started (`Automation` model exists, no router). |
 
@@ -268,7 +268,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 #### Deliverables — 🟡 IN PROGRESS
 - [x] TOTP-based MFA (Google Authenticator) *(enroll/verify/disable endpoints + TOTP-gated login + single-use backup codes + rate limiting; 12 tests)*
 - [x] Field-level encryption for sensitive data *(EncryptedType/AES on user + account credentials)*
-- [~] Audit logging for all sensitive actions *(AuditLog model exists; no logging middleware wired)*
+- [x] Audit logging for all sensitive actions *(register/login/login_failed/mfa_enroll/mfa_activate/mfa_disable; immutability guard; read endpoint; 8 tests)*
 - [ ] Session management (device tracking, logout all)
 
 #### Tasks
@@ -606,7 +606,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 |-------|-------|----------------|--------|------------------|
 | **Phase 1** | 1-4 | 60 | ✅ ~90% | Infrastructure, Task Management (CLI + Web) |
 | **Phase 2** | 5-8 | 76 | ✅ ~85% | Financial Intelligence (Transactions, OCR, ML) |
-| **Phase 3** | 9-12 | 64 | 🟡 ~30% | Security & Production (MFA, Monitoring, Backups) |
+| **Phase 3** | 9-12 | 64 | 🟡 ~35% | Security & Production (MFA, Monitoring, Backups) |
 | **Phase 4** | 13-16 | 76 | 🔴 models only | Research & Knowledge (Wiki, Semantic Search) |
 | **Phase 5** | 17-20 | 68 | 🔴 0% | Advanced Features (Voice, SMS, Portfolio) |
 | **Total** | 20 | **344** | 🟡 ~40% | Full-featured Personal AI System |
