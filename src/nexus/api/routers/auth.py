@@ -1,12 +1,13 @@
 """Authentication router — register, login, refresh, and TOTP MFA."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from nexus.database import get_db
 from nexus.models.user import User
+from nexus.services.audit import log as audit_log  # noqa: N811
 from nexus.utils import ratelimit
 from nexus.utils.dependencies import get_current_user
 from nexus.utils.security import (
@@ -101,11 +102,18 @@ def _consume_backup_code(user: User, code: str) -> bool:
     return False
 
 
+def _capture(request: Request) -> tuple[str | None, str | None]:
+    """Extract client IP and User-Agent from a request."""
+    ip = request.client.host if request.client else None
+    ua = request.headers.get("user-agent")
+    return ip, ua
+
+
 # ── Endpoints ────────────────────────────────────────────────────────────
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
+async def register(request: Request, body: RegisterRequest, db: AsyncSession = Depends(get_db)):
     """Register a new user account."""
     result = await db.execute(select(User).where(User.email == body.email))
     if result.scalar_one_or_none() is not None:
@@ -123,6 +131,17 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
     await db.flush()
     await db.refresh(user)
 
+    ip, ua = _capture(request)
+    await audit_log(
+        db,
+        user_id=user.id,
+        action="register",
+        resource_type="user",
+        resource_id=user.id,
+        ip_address=ip,
+        user_agent=ua,
+    )
+
     access_token = create_access_token({"sub": str(user.id)})
     refresh_token = create_refresh_token({"sub": str(user.id)})
 
@@ -130,12 +149,22 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
+async def login(request: Request, body: LoginRequest, db: AsyncSession = Depends(get_db)):
     """Authenticate with email + password, and a TOTP/backup code when MFA is on."""
+    ip, ua = _capture(request)
     result = await db.execute(select(User).where(User.email == body.email))
     user = result.scalar_one_or_none()
 
     if user is None or not verify_password(body.password, user.password_hash):
+        await audit_log(
+            db,
+            user_id=None,
+            action="login_failed",
+            resource_type="user",
+            ip_address=ip,
+            user_agent=ua,
+            details={"email": body.email, "reason": "invalid_credentials"},
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
@@ -150,6 +179,15 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
     # Second factor
     if user.mfa_enabled:
         if not body.totp_code:
+            await audit_log(
+                db,
+                user_id=user.id,
+                action="login_failed_mfa_required",
+                resource_type="user",
+                resource_id=user.id,
+                ip_address=ip,
+                user_agent=ua,
+            )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="MFA code required",
@@ -170,12 +208,31 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
             user, body.totp_code
         )
         if not code_ok:
+            await audit_log(
+                db,
+                user_id=user.id,
+                action="login_failed_invalid_mfa",
+                resource_type="user",
+                resource_id=user.id,
+                ip_address=ip,
+                user_agent=ua,
+            )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid MFA code",
             )
 
         await ratelimit.reset(rl_key)
+
+    await audit_log(
+        db,
+        user_id=user.id,
+        action="login",
+        resource_type="user",
+        resource_id=user.id,
+        ip_address=ip,
+        user_agent=ua,
+    )
 
     access_token = create_access_token({"sub": str(user.id)})
     refresh_token = create_refresh_token({"sub": str(user.id)})
@@ -223,7 +280,11 @@ async def get_me(user: User = Depends(get_current_user)):
 
 
 @router.post("/mfa/enroll", response_model=MfaEnrollResponse)
-async def mfa_enroll(user: User = Depends(get_current_user)) -> MfaEnrollResponse:
+async def mfa_enroll(
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> MfaEnrollResponse:
     """Begin MFA enrollment: generate a TOTP secret + QR code.
 
     The secret is stored but MFA is not activated until the user verifies a
@@ -239,12 +300,26 @@ async def mfa_enroll(user: User = Depends(get_current_user)) -> MfaEnrollRespons
     user.totp_secret = secret
     uri = build_totp_uri(secret, account_name=user.email)
 
+    ip, ua = _capture(request)
+    await audit_log(
+        db,
+        user_id=user.id,
+        action="mfa_enroll",
+        resource_type="user",
+        resource_id=user.id,
+        ip_address=ip,
+        user_agent=ua,
+    )
+
     return MfaEnrollResponse(secret=secret, otpauth_uri=uri, qr_code=qr_code_data_uri(uri))
 
 
 @router.post("/mfa/verify", response_model=MfaVerifyResponse)
 async def mfa_verify(
-    body: MfaVerifyRequest, user: User = Depends(get_current_user)
+    request: Request,
+    body: MfaVerifyRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> MfaVerifyResponse:
     """Verify a TOTP code to activate MFA; returns one-time backup codes."""
     if not user.totp_secret:
@@ -276,12 +351,26 @@ async def mfa_verify(
     user.mfa_enabled = True
     user.set_backup_codes(backup_codes)
 
+    ip, ua = _capture(request)
+    await audit_log(
+        db,
+        user_id=user.id,
+        action="mfa_activate",
+        resource_type="user",
+        resource_id=user.id,
+        ip_address=ip,
+        user_agent=ua,
+    )
+
     return MfaVerifyResponse(mfa_enabled=True, backup_codes=backup_codes)
 
 
 @router.post("/mfa/disable", response_model=MessageResponse)
 async def mfa_disable(
-    body: MfaDisableRequest, user: User = Depends(get_current_user)
+    request: Request,
+    body: MfaDisableRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> MessageResponse:
     """Disable MFA. Requires the account password to re-authenticate."""
     if not verify_password(body.password, user.password_hash):
@@ -299,5 +388,16 @@ async def mfa_disable(
     user.mfa_enabled = False
     user.totp_secret = None
     user.backup_codes = None
+
+    ip, ua = _capture(request)
+    await audit_log(
+        db,
+        user_id=user.id,
+        action="mfa_disable",
+        resource_type="user",
+        resource_id=user.id,
+        ip_address=ip,
+        user_agent=ua,
+    )
 
     return MessageResponse(detail="MFA disabled")

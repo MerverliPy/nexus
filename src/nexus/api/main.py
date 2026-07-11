@@ -6,7 +6,7 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from nexus.api.routers import auth, finance, tasks, ws
+from nexus.api.routers import audit, auth, finance, tasks, ws
 from nexus.config import get_settings
 from nexus.database import Base, engine
 
@@ -68,4 +68,5 @@ async def health_check():
 app.include_router(auth.router)
 app.include_router(finance.router)
 app.include_router(tasks.router)
+app.include_router(audit.router)
 app.include_router(ws.router)
