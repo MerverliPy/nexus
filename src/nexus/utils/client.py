@@ -58,6 +58,11 @@ def logged_in() -> bool:
     return _get_access_token() is not None
 
 
+def get_access_token() -> str | None:
+    """Get the current access token."""
+    return _get_access_token()
+
+
 def _try_refresh() -> bool:
     """Try to refresh the access token using the stored refresh token."""
     refresh_token = _get_refresh_token()

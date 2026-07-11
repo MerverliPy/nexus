@@ -2,8 +2,10 @@
 
 import csv
 import io
+import tempfile
 from datetime import date, datetime
 from decimal import Decimal
+from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
@@ -16,6 +18,9 @@ from nexus.models.finance import Account, Transaction
 from nexus.models.user import User
 from nexus.utils.dependencies import get_current_user
 from nexus.api.ws_manager import manager
+from nexus.utils.ocr import process_receipt
+from nexus.utils.categorizer import predict_category, record_correction
+from nexus.utils.storage import upload_receipt_bytes, ensure_buckets
 
 router = APIRouter(prefix="/api/v1/finance", tags=["finance"])
 
@@ -529,3 +534,131 @@ async def monthly_totals(
         {"year": int(r.year), "month": int(r.month), "total": float(r.total), "count": r.count}
         for r in rows
     ]
+
+
+# ── Receipt OCR & Category Prediction ──────────────────────────────────
+
+
+@router.post("/transactions/scan", response_model=dict)
+async def scan_receipt(
+    file: UploadFile,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Upload a receipt image, OCR it, and create a transaction.
+
+    Returns the OCR result and created transaction.
+    The user can review and edit before confirming.
+    """
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Only image files are supported")
+
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large (max 10MB)")
+
+    # Save to temp file for OCR
+    suffix = Path(file.filename).suffix if file.filename else ".jpg"
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        tmp.write(content)
+        tmp_path = tmp.name
+
+    try:
+        result = process_receipt(tmp_path)
+
+        # Upload to MinIO
+        ensure_buckets()
+        object_name = f"user_{user.id}/{file.filename or 'receipt.jpg'}"
+        receipt_url = upload_receipt_bytes(content, object_name)
+
+        # Predict category
+        category, cat_conf = None, 0.0
+        if result.vendor:
+            category, cat_conf = predict_category(result.vendor)
+
+        # Always create a pending transaction from OCR
+        tx_date = result.tx_date or date.today()
+        tx = Transaction(
+            user_id=user.id,
+            amount=result.amount or Decimal(0),
+            vendor=result.vendor,
+            category=category if cat_conf >= 0.3 else None,
+            transaction_date=tx_date,
+            is_verified=result.is_reliable(),
+            receipt_url=receipt_url,
+        )
+        db.add(tx)
+        await db.flush()
+        await db.refresh(tx)
+        tx_data = TransactionResponse.model_validate(tx).model_dump(mode="json")
+        await manager.broadcast(user.id, "transaction_created", tx_data)
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)
+
+    return {
+        "transaction": tx_data,
+        "ocr": {
+            "raw_text": result.raw_text,
+            "confidence": round(result.confidence, 2),
+            "is_reliable": result.is_reliable(),
+        },
+        "prediction": {
+            "category": category,
+            "confidence": round(cat_conf, 2),
+        },
+    }
+
+
+@router.post("/transactions/{transaction_id}/predict-category", response_model=dict)
+async def predict_transaction_category(
+    transaction_id: int,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Predict the category for a transaction based on its vendor name."""
+    result = await db.execute(
+        select(Transaction).where(Transaction.id == transaction_id, Transaction.user_id == user.id)
+    )
+    tx = result.scalar_one_or_none()
+    if tx is None:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+
+    if not tx.vendor:
+        return {"category": None, "confidence": 0.0, "detail": "No vendor name to analyze"}
+
+    category, confidence = predict_category(tx.vendor)
+    return {"category": category, "confidence": round(confidence, 2), "vendor": tx.vendor}
+
+
+@router.post("/transactions/{transaction_id}/correct-category", response_model=dict)
+async def correct_transaction_category(
+    transaction_id: int,
+    body: dict,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Record a user's category correction and retrain the model."""
+    correct_category = body.get("category")
+    if not correct_category:
+        raise HTTPException(status_code=400, detail="Category is required")
+
+    result = await db.execute(
+        select(Transaction).where(Transaction.id == transaction_id, Transaction.user_id == user.id)
+    )
+    tx = result.scalar_one_or_none()
+    if tx is None:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+
+    # Update the transaction
+    tx.category = correct_category
+    tx.is_verified = True
+    await db.flush()
+
+    # Record correction for model training
+    if tx.vendor:
+        record_correction(tx.vendor, correct_category)
+
+    tx_data = TransactionResponse.model_validate(tx).model_dump(mode="json")
+    await manager.broadcast(user.id, "transaction_updated", tx_data)
+
+    return {"status": "corrected", "transaction": tx_data}

@@ -334,6 +334,80 @@ def finance_import(filepath: str):
         sys.exit(1)
 
 
+@finance.command("upload")
+@click.argument("filepath", type=click.Path(exists=True))
+def finance_upload(filepath: str):
+    """Upload a receipt image for OCR."""
+    if not api.logged_in():
+        console.print("[red]Not logged in.[/red]")
+        sys.exit(1)
+    try:
+        import httpx
+        import os
+        token = api.get_access_token()
+        base_url = os.environ.get("NEXUS_API_URL", "http://localhost:8000")
+        with open(filepath, "rb") as f:
+            resp = httpx.post(
+                f"{base_url}/api/v1/finance/transactions/scan",
+                headers={"Authorization": f"Bearer {token}"},
+                files={"file": (filepath, f, "image/jpeg")},
+                timeout=30,
+            )
+        if resp.status_code != 200:
+            raise APIError(resp)
+
+        data = resp.json()
+        tx = data["transaction"]
+        ocr = data["ocr"]
+        pred = data["prediction"]
+
+        console.print("[bold]OCR Result:[/bold]")
+        console.print(f"  Raw text: {ocr['raw_text'][:200]}")
+        console.print(f"  Confidence: {ocr['confidence']}")
+        console.print(f"  Reliable: {'✓' if ocr['is_reliable'] else '✗'}")
+
+        console.print("[bold]Extracted:[/bold]")
+        console.print(f"  Vendor: {tx.get('vendor') or '—'}")
+        console.print(f"  Amount: ${tx.get('amount', 0):.2f}")
+        console.print(f"  Date: {tx.get('transaction_date')}")
+
+        if pred.get("category"):
+            console.print(f"  [green]Suggested category: {pred['category']}[/green]")
+        else:
+            console.print("  [yellow]Category: uncertain (use 'nexus finance categorize TX_ID')[/yellow]")
+
+        console.print(f"  [dim]Transaction #{tx['id']} created[/dim]")
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
+
+
+@finance.command("categorize")
+@click.argument("transaction_id", type=int)
+@click.option("--category", help="Set category (omit to just predict)")
+def finance_categorize(transaction_id: int, category: str):
+    """Predict or correct a transaction's category."""
+    if not api.logged_in():
+        console.print("[red]Not logged in.[/red]")
+        sys.exit(1)
+    try:
+        if category:
+            resp = api._request("POST", f"/api/v1/finance/transactions/{transaction_id}/correct-category", json_body={"category": category})
+            console.print(f"[green]Updated to '{category}'[/green]")
+        else:
+            resp = api._request("POST", f"/api/v1/finance/transactions/{transaction_id}/predict-category")
+            data = resp.json()
+            if data.get("category"):
+                conf = data["confidence"]
+                console.print(f"Predicted: [green]{data['category']}[/green] (confidence: {conf:.2f})")
+                console.print(f"To accept: [dim]nexus finance categorize {transaction_id} --category {data['category']}[/dim]")
+            else:
+                console.print(f"[yellow]Could not predict ({data.get('detail', 'low confidence')})[/yellow]")
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
+
+
 # ── Note ───────────────────────────────────────────────────────────────────
 
 
