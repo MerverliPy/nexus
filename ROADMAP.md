@@ -2,7 +2,7 @@
 
 **Version:** 1.0.0  
 **Timeline:** 20 weeks (5 months)  
-**Last Updated:** 2026-07-09
+**Last Updated:** 2026-07-11 (annotated with actual implementation state)
 
 ---
 
@@ -20,19 +20,39 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 
 ---
 
+## 📊 Implementation Status (as of 2026-07-11)
+
+> **Snapshot:** Phases 1–2 are built and wired end-to-end (usable software). Phase 3 is schema/scaffolding only. Phases 4–5 are models + stubs. Every commit after the Phase 2 lint fix (`a9fbc19`) is documentation polish — active feature development stopped at the end of Phase 2. Current working line: **mid-Phase 3**.
+
+**Legend:** `[x]` done · `[~]` partial / scaffolded · `[ ]` not started
+
+| Phase | Status | Summary |
+|-------|--------|---------|
+| **1 — Foundation** | ✅ ~90% | Infra, JWT auth, tasks, Next.js web, WebSocket all live. Gaps: no Celery worker; only 5 tests. |
+| **2 — Finance** | ✅ ~85% | CRUD + CSV import + analytics + OCR + ML categorization all wired. |
+| **3 — Security/Prod** | 🟡 ~20% | Encrypted fields only. MFA/audit/metrics/backups scaffolded but not wired. |
+| **4 — Research** | 🔴 models only | Models exist; no router registered; CLI `note` commands are TODO stubs. |
+| **5 — Advanced** | 🔴 0% | Not started (`Automation` model exists, no router). |
+
+**Two systemic gaps cut across phases:**
+1. **No Celery workers** — `src/nexus/workers/` is empty despite `celery` being a declared dependency, blocking every scheduled/async feature (recurring tasks, retraining, backups, price updates, digests).
+2. **Declared-but-unused dependencies** for Phases 3–5 (`pyotp`, `tenacity`, `circuitbreaker`, `prometheus-client`, `sentence-transformers`) — intent scaffolded, code not written.
+
+---
+
 ## Phase 1: Foundation & Task Management (Weeks 1-4)
 
 **Goal:** Build the core infrastructure and basic task management. By the end of Phase 1, you should have a working CLI and web dashboard for managing tasks.
 
 ### Week 1-2: Infrastructure Setup
 
-#### Deliverables
-- [ ] PostgreSQL + Redis + MinIO Docker Compose setup
-- [ ] FastAPI project structure with SQLAlchemy models
-- [ ] Alembic migrations initialized
-- [ ] Basic auth (JWT, no MFA yet)
-- [ ] CLI framework with Click
-- [ ] pytest test suite skeleton
+#### Deliverables — ✅ DONE
+- [x] PostgreSQL + Redis + MinIO Docker Compose setup *(+ Prometheus & Grafana already added)*
+- [x] FastAPI project structure with SQLAlchemy models
+- [x] Alembic migrations initialized *(1 migration: initial_schema)*
+- [x] Basic auth (JWT, no MFA yet) *(register/login/refresh/me)*
+- [x] CLI framework with Click *(auth/task/finance/note/status groups)*
+- [x] pytest test suite skeleton *(⚠ only 5 tests total — far below the 80% coverage goal)*
 
 #### Tasks
 1. **Project scaffolding** (4h)
@@ -81,11 +101,11 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 
 ### Week 3-4: Web Dashboard & Task Intelligence
 
-#### Deliverables
-- [ ] Next.js web dashboard (task list, create, complete)
-- [ ] Real-time updates via WebSocket
-- [ ] Recurring tasks (RRULE format)
-- [ ] Task dependencies and smart scheduling
+#### Deliverables — 🟡 MOSTLY DONE
+- [x] Next.js web dashboard (task list, create, complete)
+- [x] Real-time updates via WebSocket *(ws.py + ws_manager.py)*
+- [~] Recurring tasks (RRULE format) *(recurrence.py util exists; no Celery worker to generate instances)*
+- [~] Task dependencies and smart scheduling *(dependencies.py util exists; smart scheduling not wired)*
 
 #### Tasks
 1. **Next.js setup** (6h)
@@ -133,12 +153,12 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 
 ### Week 5-6: Transaction Management
 
-#### Deliverables
-- [ ] Transaction CRUD (CLI + API + Web)
-- [ ] Account management (link checking/credit card accounts)
-- [ ] Manual transaction entry
-- [ ] CSV import (bank statement)
-- [ ] Basic spending analytics
+#### Deliverables — ✅ DONE
+- [x] Transaction CRUD (CLI + API + Web)
+- [x] Account management (link checking/credit card accounts)
+- [x] Manual transaction entry
+- [x] CSV import (bank statement) *(with column auto-detection)*
+- [x] Basic spending analytics *(spending-by-category, monthly-totals endpoints)*
 
 #### Tasks
 1. **Transaction models & API** (8h)
@@ -184,11 +204,11 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 
 ### Week 7-8: Receipt OCR & ML Categorization
 
-#### Deliverables
-- [ ] Receipt photo → OCR → transaction
-- [ ] ML categorization with learning from corrections
-- [ ] Vendor normalization table
-- [ ] Categorization accuracy tracking
+#### Deliverables — 🟡 MOSTLY DONE
+- [x] Receipt photo → OCR → transaction *(ocr.py + /transactions/scan)*
+- [x] ML categorization with learning from corrections *(categorizer.py + predict/correct-category endpoints)*
+- [~] Vendor normalization table *(only in-memory `_clean_vendor` helper; no vendor_aliases table, no fuzzy merge)*
+- [ ] Categorization accuracy tracking *(no ml_metrics table / accuracy endpoint)*
 
 #### Tasks
 1. **MinIO integration** (4h)
@@ -245,10 +265,10 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 
 ### Week 9-10: Multi-Factor Authentication & Encryption
 
-#### Deliverables
-- [ ] TOTP-based MFA (Google Authenticator)
-- [ ] Field-level encryption for sensitive data
-- [ ] Audit logging for all sensitive actions
+#### Deliverables — 🟡 PARTIAL (scaffolding only)
+- [~] TOTP-based MFA (Google Authenticator) *(User model has encrypted totp_secret/backup_codes; NO enroll/verify endpoints; pyotp unused)*
+- [x] Field-level encryption for sensitive data *(EncryptedType/AES on user + account credentials)*
+- [~] Audit logging for all sensitive actions *(AuditLog model exists; no logging middleware wired)*
 - [ ] Session management (device tracking, logout all)
 
 #### Tasks
@@ -297,11 +317,11 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 
 ### Week 11-12: Monitoring, Backups, and Resilience
 
-#### Deliverables
-- [ ] Grafana + Prometheus monitoring
-- [ ] Automated daily backups with restoration tests
+#### Deliverables — 🟡 PARTIAL (infra only)
+- [~] Grafana + Prometheus monitoring *(containers + config/prometheus/prometheus.yml present; FastAPI has NO /metrics instrumentation)*
+- [ ] Automated daily backups with restoration tests *(no backup.sh in scripts/)*
 - [ ] systemd services for auto-restart
-- [ ] Circuit breakers and retry logic for external APIs
+- [ ] Circuit breakers and retry logic for external APIs *(tenacity/circuitbreaker declared, unused)*
 - [ ] Cost tracking dashboard for LLM API usage
 
 #### Tasks
@@ -362,11 +382,11 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 
 ### Week 13-14: Personal Wiki & Semantic Search
 
-#### Deliverables
-- [ ] Markdown notes with YAML frontmatter
-- [ ] Bidirectional links `[[note-title]]`
-- [ ] Semantic search via pgvector
-- [ ] Research project workspaces
+#### Deliverables — 🔴 MODELS ONLY
+- [~] Markdown notes with YAML frontmatter *(Note model exists; no router; CLI note commands are TODO stubs)*
+- [ ] Bidirectional links `[[note-title]]` *(NoteLink model exists; no parsing/creation logic)*
+- [ ] Semantic search via pgvector *(sentence-transformers declared, unused; no search endpoint)*
+- [~] Research project workspaces *(ResearchProject model exists; no router)*
 - [ ] Note versioning (git-backed)
 
 #### Tasks
@@ -419,7 +439,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 
 ### Week 15-16: Automated Research Workflows
 
-#### Deliverables
+#### Deliverables — 🔴 NOT STARTED
 - [ ] Deep dive research workflow (generate plan → execute → synthesize)
 - [ ] Multi-source validation (cross-reference claims)
 - [ ] Academic paper discovery (arXiv integration)
@@ -477,7 +497,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 
 ### Week 17-18: Voice & Mobile Interfaces
 
-#### Deliverables
+#### Deliverables — 🔴 NOT STARTED
 - [ ] Voice input via Whisper (speech-to-text)
 - [ ] Voice output via TTS (Coqui/ElevenLabs)
 - [ ] SMS gateway (Twilio) for quick capture
@@ -523,8 +543,8 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 
 ### Week 19-20: Investment Tracking & Smart Notifications
 
-#### Deliverables
-- [ ] Portfolio tracking (stocks, crypto, bonds)
+#### Deliverables — 🔴 NOT STARTED
+- [ ] Portfolio tracking (stocks, crypto, bonds) *(Automation model exists, no router)*
 - [ ] Rebalancing recommendations
 - [ ] Net worth tracking over time
 - [ ] Smart notification bundling
@@ -582,14 +602,14 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 
 ## Summary: Effort by Phase
 
-| Phase | Weeks | Effort (hours) | Key Deliverables |
-|-------|-------|----------------|------------------|
-| **Phase 1** | 1-4 | 60 | Infrastructure, Task Management (CLI + Web) |
-| **Phase 2** | 5-8 | 76 | Financial Intelligence (Transactions, OCR, ML) |
-| **Phase 3** | 9-12 | 64 | Security & Production (MFA, Monitoring, Backups) |
-| **Phase 4** | 13-16 | 76 | Research & Knowledge (Wiki, Semantic Search) |
-| **Phase 5** | 17-20 | 68 | Advanced Features (Voice, SMS, Portfolio) |
-| **Total** | 20 | **344** | Full-featured Personal AI System |
+| Phase | Weeks | Effort (hours) | Status | Key Deliverables |
+|-------|-------|----------------|--------|------------------|
+| **Phase 1** | 1-4 | 60 | ✅ ~90% | Infrastructure, Task Management (CLI + Web) |
+| **Phase 2** | 5-8 | 76 | ✅ ~85% | Financial Intelligence (Transactions, OCR, ML) |
+| **Phase 3** | 9-12 | 64 | 🟡 ~20% | Security & Production (MFA, Monitoring, Backups) |
+| **Phase 4** | 13-16 | 76 | 🔴 models only | Research & Knowledge (Wiki, Semantic Search) |
+| **Phase 5** | 17-20 | 68 | 🔴 0% | Advanced Features (Voice, SMS, Portfolio) |
+| **Total** | 20 | **344** | 🟡 ~40% | Full-featured Personal AI System |
 
 *Note: Total is less than 480 due to removing optional tasks (LayoutLM, advanced features). Buffer of 136 hours for debugging, refactoring, and unexpected issues.*
 
