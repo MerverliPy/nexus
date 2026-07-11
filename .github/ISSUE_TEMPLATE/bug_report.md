@@ -6,6 +6,8 @@ labels: bug
 assignees: ''
 ---
 
+> **Before submitting:** Please check the [FAQ](../../docs/FAQ.md) and [troubleshooting guide](../../QUICKSTART.md#-troubleshooting) first!
+
 **Describe the bug**
 A clear and concise description of what the bug is.
 

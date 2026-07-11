@@ -6,6 +6,8 @@ labels: enhancement
 assignees: ''
 ---
 
+> **Before submitting:** Check the [Roadmap](../../ROADMAP.md) to see if this is already planned! Also review [existing feature requests](../../issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement) to avoid duplicates.
+
 **Is your feature request related to a problem? Please describe.**
 A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
 
