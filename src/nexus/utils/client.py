@@ -293,6 +293,68 @@ def research_plan(topic: str) -> dict:
     raise APIError(resp)
 
 
+# ── Portfolio Commands ──────────────────────────────────────────────────
+
+
+def create_portfolio(name: str, target_allocation: dict | None = None) -> dict:
+    """Create an investment portfolio."""
+    body: dict = {"name": name}
+    if target_allocation:
+        body["target_allocation"] = target_allocation
+    resp = _request("POST", "/api/v1/portfolio", json_body=body)
+    if resp.status_code == 201:
+        return resp.json()
+    raise APIError(resp)
+
+
+def add_holding(
+    portfolio_id: int,
+    ticker: str,
+    quantity: float,
+    cost_basis: float,
+    asset_class: str = "stocks",
+    last_price: float | None = None,
+) -> dict:
+    """Add a holding to a portfolio."""
+    body: dict = {
+        "portfolio_id": portfolio_id,
+        "ticker": ticker,
+        "quantity": quantity,
+        "cost_basis": cost_basis,
+        "asset_class": asset_class,
+    }
+    if last_price is not None:
+        body["last_price"] = last_price
+    resp = _request("POST", "/api/v1/portfolio/holdings", json_body=body)
+    if resp.status_code == 201:
+        return resp.json()
+    raise APIError(resp)
+
+
+def portfolio_analytics(portfolio_id: int) -> dict:
+    """Get valuation and allocation for a portfolio."""
+    resp = _request("GET", f"/api/v1/portfolio/{portfolio_id}/analytics")
+    if resp.status_code == 200:
+        return resp.json()
+    raise APIError(resp)
+
+
+def portfolio_rebalance(portfolio_id: int) -> dict:
+    """Get rebalancing recommendations."""
+    resp = _request("GET", f"/api/v1/portfolio/{portfolio_id}/rebalance")
+    if resp.status_code == 200:
+        return resp.json()
+    raise APIError(resp)
+
+
+def net_worth() -> dict:
+    """Get current net worth."""
+    resp = _request("GET", "/api/v1/portfolio/networth/current")
+    if resp.status_code == 200:
+        return resp.json()
+    raise APIError(resp)
+
+
 # ── Task Commands ──────────────────────────────────────────────────────
 
 

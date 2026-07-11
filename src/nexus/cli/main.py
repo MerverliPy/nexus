@@ -700,6 +700,150 @@ def research_plan(topic: str):
         sys.exit(1)
 
 
+# ── Portfolio ──────────────────────────────────────────────────────────
+
+
+@cli.group()
+def portfolio():
+    """Investment portfolio and net-worth commands."""
+    pass
+
+
+@portfolio.command("create")
+@click.argument("name")
+@click.option("--stocks", type=float, default=None, help="Target %% stocks")
+@click.option("--bonds", type=float, default=None, help="Target %% bonds")
+@click.option("--cash", type=float, default=None, help="Target %% cash")
+def portfolio_create(name: str, stocks: float | None, bonds: float | None, cash: float | None):
+    """Create a portfolio with an optional target allocation."""
+    if not api.logged_in():
+        console.print("[yellow]Not logged in.[/yellow]")
+        sys.exit(1)
+    target = {}
+    if stocks is not None:
+        target["stocks"] = stocks
+    if bonds is not None:
+        target["bonds"] = bonds
+    if cash is not None:
+        target["cash"] = cash
+    try:
+        result = api.create_portfolio(name, target or None)
+        console.print(f"[green]Created portfolio #{result['id']}: {result['name']}[/green]")
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
+
+
+@portfolio.command("add")
+@click.argument("portfolio_id", type=int)
+@click.argument("ticker")
+@click.option("--quantity", "-q", type=float, required=True, help="Shares held")
+@click.option("--cost", "-c", type=float, required=True, help="Cost basis per share")
+@click.option("--asset-class", default="stocks", help="stocks/bonds/cash/crypto")
+@click.option("--price", type=float, default=None, help="Manual last price")
+def portfolio_add(
+    portfolio_id: int,
+    ticker: str,
+    quantity: float,
+    cost: float,
+    asset_class: str,
+    price: float | None,
+):
+    """Add a holding to a portfolio."""
+    if not api.logged_in():
+        console.print("[yellow]Not logged in.[/yellow]")
+        sys.exit(1)
+    try:
+        result = api.add_holding(portfolio_id, ticker, quantity, cost, asset_class, price)
+        console.print(f"[green]Added {result['quantity']} {result['ticker']}[/green]")
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
+
+
+@portfolio.command("show")
+@click.argument("portfolio_id", type=int)
+def portfolio_show(portfolio_id: int):
+    """Show portfolio valuation and allocation."""
+    if not api.logged_in():
+        console.print("[yellow]Not logged in.[/yellow]")
+        sys.exit(1)
+    try:
+        data = api.portfolio_analytics(portfolio_id)
+        console.print(f"[bold]{data['name']}[/bold]")
+        console.print(
+            f"  Value: [green]${data['total_value']:,.2f}[/green]  "
+            f"Gain/Loss: ${data['total_gain_loss']:,.2f} ({data['total_gain_loss_pct']:.1f}%)"
+        )
+        table = Table("Ticker", "Class", "Qty", "Price", "Value", "Gain/Loss", "Live")
+        for h in data["holdings"]:
+            table.add_row(
+                h["ticker"],
+                h["asset_class"],
+                f"{h['quantity']:g}",
+                f"${h['current_price']:,.2f}",
+                f"${h['market_value']:,.2f}",
+                f"${h['gain_loss']:,.2f}",
+                "✓" if h["price_is_live"] else "cost",
+            )
+        console.print(table)
+        if data["allocation"]:
+            console.print(
+                "  Allocation: " + ", ".join(f"{k} {v}%" for k, v in data["allocation"].items())
+            )
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
+
+
+@portfolio.command("rebalance")
+@click.argument("portfolio_id", type=int)
+def portfolio_rebalance_cmd(portfolio_id: int):
+    """Show rebalancing recommendations vs target allocation."""
+    if not api.logged_in():
+        console.print("[yellow]Not logged in.[/yellow]")
+        sys.exit(1)
+    try:
+        data = api.portfolio_rebalance(portfolio_id)
+        if not data["recommendations"]:
+            console.print("[yellow]No target allocation set.[/yellow]")
+            return
+        table = Table("Asset Class", "Current", "Target", "Drift", "Action", "Amount")
+        for r in data["recommendations"]:
+            color = {"buy": "green", "sell": "red", "hold": "white"}[r["action"]]
+            table.add_row(
+                r["asset_class"],
+                f"{r['current_pct']:.1f}%",
+                f"{r['target_pct']:.1f}%",
+                f"{r['drift_pct']:+.1f}%",
+                f"[{color}]{r['action']}[/{color}]",
+                f"${r['amount']:,.2f}",
+            )
+        console.print(table)
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
+
+
+@portfolio.command("networth")
+def portfolio_networth():
+    """Show current net worth."""
+    if not api.logged_in():
+        console.print("[yellow]Not logged in.[/yellow]")
+        sys.exit(1)
+    try:
+        data = api.net_worth()
+        console.print("[bold]Net Worth[/bold]")
+        console.print(f"  Assets:      [green]${data['total_assets']:,.2f}[/green]")
+        console.print(f"  Liabilities: [red]${data['total_liabilities']:,.2f}[/red]")
+        console.print(f"  Net Worth:   [bold]${data['net_worth']:,.2f}[/bold]")
+        b = data["breakdown"]
+        console.print(f"  (cash ${b['cash_accounts']:,.2f} + portfolio ${b['portfolio']:,.2f})")
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
+
+
 # ── System ─────────────────────────────────────────────────────────────────
 
 
