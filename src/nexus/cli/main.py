@@ -626,6 +626,80 @@ def note_list(project_id: int | None, tag: str | None):
         sys.exit(1)
 
 
+@note.command("export")
+@click.argument("note_id", type=int)
+@click.option("--format", "fmt", default="md", help="Export format: md, pdf, html, docx")
+def note_export(note_id: int, fmt: str):
+    """Export a note to a file."""
+    if not api.logged_in():
+        console.print("[yellow]Not logged in.[/yellow]")
+        sys.exit(1)
+    try:
+        result = api.export_note(note_id, fmt)
+        console.print(f"[green]Exported to {result['file']}[/green]")
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
+
+
+# ── Research ───────────────────────────────────────────────────────────
+
+
+@cli.group()
+def research():
+    """Research and discovery commands."""
+    pass
+
+
+@research.command("papers")
+@click.argument("query")
+@click.option("--limit", type=int, default=10, help="Max results")
+def research_papers(query: str, limit: int):
+    """Search arXiv for academic papers."""
+    if not api.logged_in():
+        console.print("[yellow]Not logged in.[/yellow]")
+        sys.exit(1)
+    try:
+        papers = api.search_papers(query, limit)
+        if not papers:
+            console.print("[yellow]No papers found.[/yellow]")
+            return
+        table = Table("#", "Title", "Authors", "Cred", "Year")
+        for i, p in enumerate(papers, 1):
+            authors = ", ".join(p.get("authors", [])[:2])
+            if len(p.get("authors", [])) > 2:
+                authors += " et al."
+            year = p.get("published", "")[:4]
+            table.add_row(
+                str(i),
+                p["title"],
+                authors,
+                f"{p.get('credibility', 0):.1f}",
+                year,
+            )
+        console.print(table)
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
+
+
+@research.command("plan")
+@click.argument("topic")
+def research_plan(topic: str):
+    """Generate research questions for a topic (LLM-powered)."""
+    if not api.logged_in():
+        console.print("[yellow]Not logged in.[/yellow]")
+        sys.exit(1)
+    try:
+        data = api.research_plan(topic)
+        console.print(f"[bold]Research Plan: {data['topic']}[/bold]")
+        for i, q in enumerate(data["questions"], 1):
+            console.print(f"  {i}. {q}")
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
+
+
 # ── System ─────────────────────────────────────────────────────────────────
 
 

@@ -262,6 +262,37 @@ def list_notes(project_id: int | None = None, tag: str | None = None) -> list[di
     raise APIError(resp)
 
 
+# ── Research Commands ───────────────────────────────────────────────────
+
+
+def search_papers(query: str, limit: int = 10) -> list[dict]:
+    """Search arXiv papers."""
+    resp = _request("GET", f"/api/v1/research/research/papers?q={query}&limit={limit}")
+    if resp.status_code == 200:
+        return resp.json()
+    raise APIError(resp)
+
+
+def export_note(note_id: int, fmt: str = "md") -> dict:
+    """Export a note to the given format."""
+    resp = _request(
+        "POST",
+        f"/api/v1/research/notes/{note_id}/export",
+        json_body={"format": fmt},
+    )
+    if resp.status_code == 200:
+        return resp.json()
+    raise APIError(resp)
+
+
+def research_plan(topic: str) -> dict:
+    """Generate a research plan from a topic (LLM-powered)."""
+    resp = _request("POST", "/api/v1/research/research/plan", json_body={"topic": topic})
+    if resp.status_code == 200:
+        return resp.json()
+    raise APIError(resp)
+
+
 # ── Task Commands ──────────────────────────────────────────────────────
 
 

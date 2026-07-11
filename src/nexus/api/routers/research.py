@@ -11,6 +11,8 @@ from nexus.database import get_db
 from nexus.models.research import Note, NoteLink, ResearchProject
 from nexus.models.user import User
 from nexus.services.embeddings import embed, is_available
+from nexus.services.research import export_note, generate_plan
+from nexus.utils.credibility import score as credibility_score
 from nexus.utils.dependencies import get_current_user
 from nexus.utils.wikilinks import extract_wikilinks
 
@@ -85,6 +87,35 @@ class ProjectResponse(BaseModel):
     status: str
 
     model_config = {"from_attributes": True}
+
+
+class ArxivPaper(BaseModel):
+    title: str
+    summary: str
+    authors: list[str]
+    published: str
+    pdf_url: str
+    arxiv_id: str
+    primary_category: str
+    credibility: float = 1.0
+
+
+class ResearchPlanRequest(BaseModel):
+    topic: str
+
+
+class ResearchPlanResponse(BaseModel):
+    topic: str
+    questions: list[str]
+
+
+class ExportRequest(BaseModel):
+    format: str = "md"  # md, pdf, html, docx
+
+
+class ExportResponse(BaseModel):
+    file: str
+    format: str
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────
@@ -357,3 +388,72 @@ async def list_projects(
         .order_by(ResearchProject.created_at.desc())
     )
     return [ProjectResponse.model_validate(p) for p in result.scalars().all()]
+
+
+# ── Research workflow ──────────────────────────────────────────────────────
+
+
+@router.post("/research/plan", response_model=ResearchPlanResponse)
+async def plan_research(body: ResearchPlanRequest):
+    """Generate research questions for a topic (LLM-powered when available)."""
+    from nexus.config import get_settings
+
+    s = get_settings()
+    questions = await generate_plan(
+        body.topic,
+        openrouter_api_key=s.openrouter_api_key,
+        default_model=s.llm_default_model,
+    )
+    if questions is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="LLM provider unavailable (no API key configured or network error)",
+        )
+    return ResearchPlanResponse(topic=body.topic, questions=questions)
+
+
+@router.get("/research/papers", response_model=list[ArxivPaper])
+async def search_papers(
+    q: str = Query(..., description="Search query"),
+    limit: int = Query(10, ge=1, le=50),
+):
+    """Search arXiv for academic papers. Returns credibility-scored results."""
+    from nexus.services.research import search_arxiv
+
+    papers = await search_arxiv(q, max_results=limit)
+    scored: list[ArxivPaper] = []
+    for p in papers:
+        rated = p.copy()
+        rated["credibility"] = credibility_score(p.get("pdf_url", ""))
+        scored.append(ArxivPaper(**rated))
+    return scored
+
+
+# ── Export ──────────────────────────────────────────────────────────────────
+
+
+@router.post("/notes/{note_id}/export", response_model=ExportResponse)
+async def export_note_endpoint(
+    note_id: int,
+    body: ExportRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ExportResponse:
+
+    from nexus.models.research import Note as NoteModel
+
+    result = await db.execute(
+        select(NoteModel).where(NoteModel.id == note_id, NoteModel.user_id == user.id)
+    )
+    note = result.scalar_one_or_none()
+    if note is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
+
+    exported = export_note(_to_response(note).model_dump(), fmt=body.format)
+    if exported is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Export to {body.format} failed (pandoc may not be installed). "
+            "Export to 'md' format is always available.",
+        )
+    return ExportResponse(**exported)
