@@ -31,7 +31,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 | **1 — Foundation** | ✅ ~95% | Infra, JWT auth, tasks, Next.js web, WebSocket live. Celery worker now generates recurring task instances. |
 | **2 — Finance** | ✅ 100% | CRUD, CSV import, analytics, OCR, ML categorization, accuracy tracking, vendor normalization — all done. |
 | **3 — Security/Prod** | 🟡 ~45% | All W9-10 done. W11-12: Prometheus /metrics, backup+restore scripts, systemd templates, circuit breaker, LLM cost model all in place. |
-| **4 — Research** | 🟡 ~70% | Notes, wiki-links, hybrid search, arXiv, credibility scoring, LLM plans, export — all live & tested. |
+| **4 — Research** | 🟡 ~85% | Notes, wiki-links, hybrid search, arXiv, credibility scoring, LLM plans, export, git versioning — all live & tested. |
 | **5 — Advanced** | 🟡 ~55% | Portfolio + net-worth + smart notification bundling + ML budget forecasting all live & tested. Voice/SMS/PWA remain. |
 
 **Two systemic gaps cut across phases:**
@@ -387,7 +387,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 - [x] Bidirectional links `[[note-title]]` *(extract_wikilinks, backlinks endpoint, self-link ignored)*
 - [x] Semantic search via pgvector *(hybrid: pgvector cosine distance when embeddings present → graceful FTS fallback; pluggable provider: OpenAI or sentence-transformers)*
 - [x] Research project workspaces *(router: CRUD + list)*
-- [ ] Note versioning (git-backed) *(deferred)*
+- [x] Note versioning (git-backed) *(utils/versioning.py: auto-commit on create/update, history, restore; 10 tests)*
 
 #### Tasks
 1. **Note models & API** (6h)

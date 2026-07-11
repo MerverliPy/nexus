@@ -188,6 +188,12 @@ async def create_note(
     await db.flush()
     await _resolve_links(db, note, user.id)
     await db.refresh(note)
+
+    # Auto-commit to git versioning
+    from nexus.utils.versioning import save_note_version
+
+    save_note_version(note.id, note.title, note.content)
+
     return _to_response(note)
 
 
@@ -252,6 +258,12 @@ async def update_note(
 
     await db.flush()
     await db.refresh(note)
+
+    # Auto-commit to git versioning
+    from nexus.utils.versioning import save_note_version
+
+    save_note_version(note.id, note.title, note.content)
+
     return _to_response(note)
 
 
@@ -297,6 +309,57 @@ async def get_backlinks(
     incoming = [NoteLinkInfo(id=r.id, title=r.title) for r in in_q.all()]
 
     return BacklinksResponse(note_id=note_id, outgoing=outgoing, incoming=incoming)
+
+
+# ── Versioning ──────────────────────────────────────────────────────────
+
+
+@router.get("/notes/{note_id}/history")
+async def get_note_history(
+    note_id: int,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return git history for a note."""
+    result = await db.execute(select(Note).where(Note.id == note_id, Note.user_id == user.id))
+    note = result.scalar_one_or_none()
+    if note is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
+
+    from nexus.utils.versioning import get_note_history
+
+    return {"note_id": note_id, "entries": get_note_history(note_id)}
+
+
+@router.post("/notes/{note_id}/restore")
+async def restore_note_version(
+    note_id: int,
+    body: dict,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Restore a note to a previous version by commit hash.
+
+    Body: {"commit": "abc1234"}
+    """
+    commit_hash = body.get("commit", "")
+    if not commit_hash:
+        raise HTTPException(status_code=400, detail="commit hash is required")
+
+    result = await db.execute(select(Note).where(Note.id == note_id, Note.user_id == user.id))
+    note = result.scalar_one_or_none()
+    if note is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
+
+    from nexus.utils.versioning import restore_note
+
+    content = restore_note(note_id, commit_hash)
+    if content is None:
+        raise HTTPException(status_code=404, detail="Version not found")
+
+    note.content = content
+    await db.flush()
+    return {"note_id": note_id, "content": content, "restored_from": commit_hash[:8]}
 
 
 # ── Search ───────────────────────────────────────────────────────────────

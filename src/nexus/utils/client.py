@@ -285,6 +285,26 @@ def export_note(note_id: int, fmt: str = "md") -> dict:
     raise APIError(resp)
 
 
+def get_note_history(note_id: int) -> dict:
+    """Get git version history for a note."""
+    resp = _request("GET", f"/api/v1/research/notes/{note_id}/history")
+    if resp.status_code == 200:
+        return resp.json()
+    raise APIError(resp)
+
+
+def restore_note(note_id: int, commit: str) -> dict:
+    """Restore a note to a previous version by commit hash."""
+    resp = _request(
+        "POST",
+        f"/api/v1/research/notes/{note_id}/restore",
+        json_body={"commit": commit},
+    )
+    if resp.status_code == 200:
+        return resp.json()
+    raise APIError(resp)
+
+
 def research_plan(topic: str) -> dict:
     """Generate a research plan from a topic (LLM-powered)."""
     resp = _request("POST", "/api/v1/research/research/plan", json_body={"topic": topic})

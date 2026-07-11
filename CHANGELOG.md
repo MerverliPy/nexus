@@ -28,9 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Actions CI workflow
 - Contributing guidelines
 - Issue and PR templates
-- Budget forecasting with ML — sklearn per-category regression + 95% CI + CLI (`nexus finance forecast`) + API (`GET /finance/analytics/forecast`) + 8 tests
-- Categorization accuracy tracking — prediction log, per-category accuracy stats, `GET /finance/analytics/categorizer-accuracy` endpoint + 10 tests
-- Vendor normalization — VendorAlias model, fuzzy matching (difflib), merge/alias APIs, CLI (`nexus finance vendors`, `merge-vendor`), migration + 17 tests
+- Budget forecasting with ML — sklearn per-category regression + 95% CI + CLI (`nexus finance forecast`) + API + 8 tests
+- Categorization accuracy tracking — prediction log, per-category stats, accuracy endpoint + 10 tests
+- Vendor normalization — VendorAlias model, fuzzy matching (difflib), merge/alias APIs + 17 tests
+- Note versioning (git-backed) — auto-commit on save, history/restore endpoints, CLI + 10 tests
 
 ### Infrastructure
 - Docker Compose setup with 6 services

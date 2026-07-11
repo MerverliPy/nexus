@@ -735,6 +735,47 @@ def note_export(note_id: int, fmt: str):
         sys.exit(1)
 
 
+@note.command("history")
+@click.argument("note_id", type=int)
+def note_history(note_id: int):
+    """Show git history for a note."""
+    if not api.logged_in():
+        console.print("[yellow]Not logged in.[/yellow]")
+        sys.exit(1)
+    try:
+        result = api.get_note_history(note_id)
+        entries = result.get("entries", [])
+        if not entries:
+            console.print("[dim]No version history found.[/dim]")
+            return
+        table = Table(title=f"Version History — Note #{note_id}")
+        table.add_column("Commit", style="cyan")
+        table.add_column("Date")
+        table.add_column("Message")
+        for e in entries:
+            table.add_row(e["commit"], e["date"], e["message"])
+        console.print(table)
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
+
+
+@note.command("restore")
+@click.argument("note_id", type=int)
+@click.argument("commit")
+def note_restore(note_id: int, commit: str):
+    """Restore a note to a previous version by commit hash."""
+    if not api.logged_in():
+        console.print("[yellow]Not logged in.[/yellow]")
+        sys.exit(1)
+    try:
+        result = api.restore_note(note_id, commit)
+        console.print(f"[green]Restored note #{result['note_id']} from commit [bold]{result['restored_from']}[/bold][/green]")
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
+
+
 # ── Research ───────────────────────────────────────────────────────────
 
 
