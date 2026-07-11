@@ -31,7 +31,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 | **1 — Foundation** | ✅ ~95% | Infra, JWT auth, tasks, Next.js web, WebSocket live. Celery worker now generates recurring task instances. |
 | **2 — Finance** | ✅ ~85% | CRUD + CSV import + analytics + OCR + ML categorization all wired. |
 | **3 — Security/Prod** | 🟡 ~45% | All W9-10 done. W11-12: Prometheus /metrics, backup+restore scripts, systemd templates, circuit breaker, LLM cost model all in place. |
-| **4 — Research** | 🟡 ~40% | Notes + projects router, wiki-links, hybrid search (semantic+FTS), real CLI live. |
+| **4 — Research** | 🟡 ~70% | Notes, wiki-links, hybrid search, arXiv, credibility scoring, LLM plans, export — all live & tested. |
 | **5 — Advanced** | 🔴 0% | Not started (`Automation` model exists, no router). |
 
 **Two systemic gaps cut across phases:**
@@ -440,11 +440,12 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 ### Week 15-16: Automated Research Workflows
 
 #### Deliverables — 🔴 NOT STARTED
-- [ ] Deep dive research workflow (generate plan → execute → synthesize)
-- [ ] Multi-source validation (cross-reference claims)
-- [ ] Academic paper discovery (arXiv integration)
-- [ ] Source credibility scoring
-- [ ] Export pipeline (markdown → PDF/slides)
+#### Deliverables — 🟡 MOSTLY DONE
+- [x] Deep dive research workflow (generate plan) *(POST /research/plan; LLM via OpenRouter, 503 when no key)*
+- [~] Multi-source validation (cross-reference claims) *(credibility weighting in place; synthesis deferred)*
+- [x] Academic paper discovery (arXiv integration) *(utils/arxiv_api.py + GET /research/papers; real API, tested live)*
+- [x] Source credibility scoring *(utils/credibility.py: domain tiers 0.0–1.0; 9 unit tests)*
+- [x] Export pipeline (markdown → PDF/slides) *(services/research.py: md always, pandoc for pdf/html/docx)*
 
 #### Tasks
 1. **Research plan generation** (6h)
@@ -607,7 +608,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 | **Phase 1** | 1-4 | 60 | ✅ ~95% | Infrastructure, Task Management (CLI + Web) |
 | **Phase 2** | 5-8 | 76 | ✅ ~85% | Financial Intelligence (Transactions, OCR, ML) |
 | **Phase 3** | 9-12 | 64 | 🟡 ~45% | Security & Production (MFA, Monitoring, Backups) |
-| **Phase 4** | 13-16 | 76 | 🟡 ~40% | Research & Knowledge (Wiki, Semantic Search) |
+| **Phase 4** | 13-16 | 76 | 🟡 ~70% | Research & Knowledge (Wiki, Semantic Search) |
 | **Phase 5** | 17-20 | 68 | 🔴 0% | Advanced Features (Voice, SMS, Portfolio) |
 | **Total** | 20 | **344** | 🟡 ~40% | Full-featured Personal AI System |
 
