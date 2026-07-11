@@ -2,7 +2,6 @@
 
 import calendar
 from datetime import UTC, datetime, timedelta
-from typing import Optional
 
 import dateparser
 
@@ -29,12 +28,13 @@ def _preprocess(text: str, reference: datetime) -> str:
                     days_ahead += offset_days or 7
                 future = reference + timedelta(days=days_ahead)
                 # Preserve any trailing text (e.g. " 3pm")
-                rest = text[len(pattern):]
+                rest = text[len(pattern) :]
                 return future.strftime("%Y-%m-%d") + rest
 
     # "in X days/weeks"
     import re
-    m = re.match(r'in\s+(\d+)\s+(day|days|week|weeks)', lower)
+
+    m = re.match(r"in\s+(\d+)\s+(day|days|week|weeks)", lower)
     if m:
         num = int(m.group(1))
         unit = m.group(2)
@@ -46,7 +46,7 @@ def _preprocess(text: str, reference: datetime) -> str:
     return text
 
 
-def parse_natural_date(text: str, reference: Optional[datetime] = None) -> Optional[datetime]:
+def parse_natural_date(text: str, reference: datetime | None = None) -> datetime | None:
     """Parse a natural language date string into a datetime.
 
     Supports phrases like:
@@ -83,7 +83,7 @@ def parse_natural_date(text: str, reference: Optional[datetime] = None) -> Optio
     return result
 
 
-def parse_time_of_day(text: str) -> Optional[timedelta]:
+def parse_time_of_day(text: str) -> timedelta | None:
     """Parse a time-of-day string into a timedelta offset."""
     time_map = {
         "morning": timedelta(hours=9),

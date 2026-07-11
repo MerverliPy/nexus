@@ -3,7 +3,6 @@
 import json
 import re
 from pathlib import Path
-from typing import Optional
 
 import joblib
 import numpy as np
@@ -18,77 +17,165 @@ CORRECTIONS_PATH = Path.home() / ".nexus" / "category_corrections.json"
 # Default training data (bootstrapped seed)
 SEED_DATA: list[tuple[str, str]] = [
     # Dining
-    ("starbucks", "Dining"), ("mc donalds", "Dining"), ("mcdonalds", "Dining"),
-    ("wendys", "Dining"), ("chipotle", "Dining"), ("subway", "Dining"),
-    ("pizza hut", "Dining"), ("dominos", "Dining"), ("restaurant", "Dining"),
-    ("cafe", "Dining"), ("coffee", "Dining"), ("diner", "Dining"),
-    ("dunkin", "Dining"), ("kfc", "Dining"), ("taco bell", "Dining"),
-    ("burger king", "Dining"), ("panera", "Dining"), ("olive garden", "Dining"),
-    ("chilis", "Dining"), ("applebees", "Dining"), ("dairy queen", "Dining"),
-    ("panda express", "Dining"), ("popeyes", "Dining"), ("five guys", "Dining"),
-    ("wingstop", "Dining"), ("jimmy johns", "Dining"), ("jersey mikes", "Dining"),
-    ("qdobra", "Dining"), ("chipotle mexican grill", "Dining"),
-    ("the cheesecake factory", "Dining"), ("outback steakhouse", "Dining"),
-    ("texas roadhouse", "Dining"), ("red lobster", "Dining"),
-    
+    ("starbucks", "Dining"),
+    ("mc donalds", "Dining"),
+    ("mcdonalds", "Dining"),
+    ("wendys", "Dining"),
+    ("chipotle", "Dining"),
+    ("subway", "Dining"),
+    ("pizza hut", "Dining"),
+    ("dominos", "Dining"),
+    ("restaurant", "Dining"),
+    ("cafe", "Dining"),
+    ("coffee", "Dining"),
+    ("diner", "Dining"),
+    ("dunkin", "Dining"),
+    ("kfc", "Dining"),
+    ("taco bell", "Dining"),
+    ("burger king", "Dining"),
+    ("panera", "Dining"),
+    ("olive garden", "Dining"),
+    ("chilis", "Dining"),
+    ("applebees", "Dining"),
+    ("dairy queen", "Dining"),
+    ("panda express", "Dining"),
+    ("popeyes", "Dining"),
+    ("five guys", "Dining"),
+    ("wingstop", "Dining"),
+    ("jimmy johns", "Dining"),
+    ("jersey mikes", "Dining"),
+    ("qdobra", "Dining"),
+    ("chipotle mexican grill", "Dining"),
+    ("the cheesecake factory", "Dining"),
+    ("outback steakhouse", "Dining"),
+    ("texas roadhouse", "Dining"),
+    ("red lobster", "Dining"),
     # Groceries
-    ("walmart", "Groceries"), ("target", "Groceries"), ("kroger", "Groceries"),
-    ("whole foods", "Groceries"), ("aldi", "Groceries"), ("sprouts", "Groceries"),
-    ("safeway", "Groceries"), ("publix", "Groceries"), ("costco", "Groceries"),
-    ("grocery", "Groceries"), ("supermarket", "Groceries"),
-    ("trader joes", "Groceries"), ("wegmans", "Groceries"),
-    ("hebs", "Groceries"), ("food lion", "Groceries"), ("giant", "Groceries"),
-    ("stop shop", "Groceries"), ("meijer", "Groceries"), ("winco", "Groceries"),
-    ("sam club", "Groceries"), ("bj wholesale", "Groceries"),
-    
+    ("walmart", "Groceries"),
+    ("target", "Groceries"),
+    ("kroger", "Groceries"),
+    ("whole foods", "Groceries"),
+    ("aldi", "Groceries"),
+    ("sprouts", "Groceries"),
+    ("safeway", "Groceries"),
+    ("publix", "Groceries"),
+    ("costco", "Groceries"),
+    ("grocery", "Groceries"),
+    ("supermarket", "Groceries"),
+    ("trader joes", "Groceries"),
+    ("wegmans", "Groceries"),
+    ("hebs", "Groceries"),
+    ("food lion", "Groceries"),
+    ("giant", "Groceries"),
+    ("stop shop", "Groceries"),
+    ("meijer", "Groceries"),
+    ("winco", "Groceries"),
+    ("sam club", "Groceries"),
+    ("bj wholesale", "Groceries"),
     # Entertainment
-    ("netflix", "Entertainment"), ("spotify", "Entertainment"), ("hulu", "Entertainment"),
-    ("disney", "Entertainment"), ("hbo", "Entertainment"), ("paramount", "Entertainment"),
-    ("peacock", "Entertainment"), ("max", "Entertainment"),
-    ("amc", "Entertainment"), ("cinemark", "Entertainment"), ("regal", "Entertainment"),
-    ("movie theater", "Entertainment"), ("cinema", "Entertainment"),
-    ("crunchyroll", "Entertainment"), ("youtube premium", "Entertainment"),
-    ("apple tv", "Entertainment"), ("apple music", "Entertainment"),
-    ("twitch", "Entertainment"), ("steam", "Entertainment"),
-    ("xbox", "Entertainment"), ("playstation", "Entertainment"),
-    ("nintendo", "Entertainment"), ("game stop", "Entertainment"),
-    
+    ("netflix", "Entertainment"),
+    ("spotify", "Entertainment"),
+    ("hulu", "Entertainment"),
+    ("disney", "Entertainment"),
+    ("hbo", "Entertainment"),
+    ("paramount", "Entertainment"),
+    ("peacock", "Entertainment"),
+    ("max", "Entertainment"),
+    ("amc", "Entertainment"),
+    ("cinemark", "Entertainment"),
+    ("regal", "Entertainment"),
+    ("movie theater", "Entertainment"),
+    ("cinema", "Entertainment"),
+    ("crunchyroll", "Entertainment"),
+    ("youtube premium", "Entertainment"),
+    ("apple tv", "Entertainment"),
+    ("apple music", "Entertainment"),
+    ("twitch", "Entertainment"),
+    ("steam", "Entertainment"),
+    ("xbox", "Entertainment"),
+    ("playstation", "Entertainment"),
+    ("nintendo", "Entertainment"),
+    ("game stop", "Entertainment"),
     # Transportation
-    ("uber", "Transportation"), ("lyft", "Transportation"), ("gas station", "Transportation"),
-    ("shell", "Transportation"), ("exxon", "Transportation"), ("chevron", "Transportation"),
-    ("bp", "Transportation"), ("speedway", "Transportation"), ("parking", "Transportation"),
-    ("toll", "Transportation"), ("transit", "Transportation"), ("amtrak", "Transportation"),
-    ("gas", "Transportation"), ("fuel", "Transportation"),
-    ("circle k", "Transportation"), ("7 eleven", "Transportation"),
-    ("delta airlines", "Transportation"), ("united airlines", "Transportation"),
-    ("southwest", "Transportation"), ("american airlines", "Transportation"),
-    ("uber eats", "Transportation"), ("doordash", "Transportation"), ("grubhub", "Transportation"),
-    
+    ("uber", "Transportation"),
+    ("lyft", "Transportation"),
+    ("gas station", "Transportation"),
+    ("shell", "Transportation"),
+    ("exxon", "Transportation"),
+    ("chevron", "Transportation"),
+    ("bp", "Transportation"),
+    ("speedway", "Transportation"),
+    ("parking", "Transportation"),
+    ("toll", "Transportation"),
+    ("transit", "Transportation"),
+    ("amtrak", "Transportation"),
+    ("gas", "Transportation"),
+    ("fuel", "Transportation"),
+    ("circle k", "Transportation"),
+    ("7 eleven", "Transportation"),
+    ("delta airlines", "Transportation"),
+    ("united airlines", "Transportation"),
+    ("southwest", "Transportation"),
+    ("american airlines", "Transportation"),
+    ("uber eats", "Transportation"),
+    ("doordash", "Transportation"),
+    ("grubhub", "Transportation"),
     # Shopping
-    ("amazon", "Shopping"), ("amazon prime", "Shopping"), ("amzn", "Shopping"),
-    ("etsy", "Shopping"), ("ebay", "Shopping"), ("walmart.com", "Shopping"),
-    ("nordstrom", "Shopping"), ("macys", "Shopping"), ("best buy", "Shopping"),
-    ("home depot", "Shopping"), ("lowes", "Shopping"), ("ikea", "Shopping"),
-    ("target.com", "Shopping"), ("shopify", "Shopping"),
-    ("zara", "Shopping"), ("h m", "Shopping"), ("gap", "Shopping"),
-    ("nike", "Shopping"), ("adidas", "Shopping"),
-    ("wish", "Shopping"), ("temu", "Shopping"),
-    
+    ("amazon", "Shopping"),
+    ("amazon prime", "Shopping"),
+    ("amzn", "Shopping"),
+    ("etsy", "Shopping"),
+    ("ebay", "Shopping"),
+    ("walmart.com", "Shopping"),
+    ("nordstrom", "Shopping"),
+    ("macys", "Shopping"),
+    ("best buy", "Shopping"),
+    ("home depot", "Shopping"),
+    ("lowes", "Shopping"),
+    ("ikea", "Shopping"),
+    ("target.com", "Shopping"),
+    ("shopify", "Shopping"),
+    ("zara", "Shopping"),
+    ("h m", "Shopping"),
+    ("gap", "Shopping"),
+    ("nike", "Shopping"),
+    ("adidas", "Shopping"),
+    ("wish", "Shopping"),
+    ("temu", "Shopping"),
     # Bills & Utilities
-    ("verizon", "Bills"), ("at t", "Bills"), ("t mobile", "Bills"),
-    ("comcast", "Bills"), ("xfinity", "Bills"), ("electric", "Bills"),
-    ("water bill", "Bills"), ("internet", "Bills"), ("phone bill", "Bills"),
-    ("insurance", "Bills"), ("rent", "Bills"), ("mortgage", "Bills"),
-    ("geico", "Bills"), ("state farm", "Bills"), ("allstate", "Bills"),
-    ("progressive", "Bills"), ("liberty mutual", "Bills"),
-    ("cable", "Bills"), ("utility", "Bills"),
-    ("duke energy", "Bills"), ("pge", "Bills"),
-    
+    ("verizon", "Bills"),
+    ("at t", "Bills"),
+    ("t mobile", "Bills"),
+    ("comcast", "Bills"),
+    ("xfinity", "Bills"),
+    ("electric", "Bills"),
+    ("water bill", "Bills"),
+    ("internet", "Bills"),
+    ("phone bill", "Bills"),
+    ("insurance", "Bills"),
+    ("rent", "Bills"),
+    ("mortgage", "Bills"),
+    ("geico", "Bills"),
+    ("state farm", "Bills"),
+    ("allstate", "Bills"),
+    ("progressive", "Bills"),
+    ("liberty mutual", "Bills"),
+    ("cable", "Bills"),
+    ("utility", "Bills"),
+    ("duke energy", "Bills"),
+    ("pge", "Bills"),
     # Health
-    ("cvs", "Health"), ("walgreens", "Health"), ("pharmacy", "Health"),
-    ("doctor", "Health"), ("hospital", "Health"), ("dentist", "Health"),
-    ("optometrist", "Health"), ("copay", "Health"), ("prescription", "Health"),
-    ("urgent care", "Health"), ("clinic", "Health"),
+    ("cvs", "Health"),
+    ("walgreens", "Health"),
+    ("pharmacy", "Health"),
+    ("doctor", "Health"),
+    ("hospital", "Health"),
+    ("dentist", "Health"),
+    ("optometrist", "Health"),
+    ("copay", "Health"),
+    ("prescription", "Health"),
+    ("urgent care", "Health"),
+    ("clinic", "Health"),
 ]
 
 
@@ -102,10 +189,12 @@ def _clean_vendor(vendor: str) -> str:
 
 
 def _build_pipeline() -> Pipeline:
-    return Pipeline([
-        ("tfidf", TfidfVectorizer(analyzer="word", ngram_range=(1, 2), max_features=1000)),
-        ("clf", LogisticRegression(max_iter=200, C=1.0)),
-    ])
+    return Pipeline(
+        [
+            ("tfidf", TfidfVectorizer(analyzer="word", ngram_range=(1, 2), max_features=1000)),
+            ("clf", LogisticRegression(max_iter=200, C=1.0)),
+        ]
+    )
 
 
 def _load_corrections() -> list[tuple[str, str]]:
@@ -146,7 +235,7 @@ def _get_model() -> Pipeline:
     return pipe
 
 
-def predict_category(vendor: str) -> tuple[Optional[str], float]:
+def predict_category(vendor: str) -> tuple[str | None, float]:
     """Predict a transaction category from vendor name.
 
     Returns (category: str | None, confidence: float).
@@ -191,4 +280,4 @@ def record_correction(vendor: str, correct_category: str) -> None:
 
 def get_available_categories() -> list[str]:
     """Get the list of categories the model knows about."""
-    return sorted(set(c for _, c in SEED_DATA))
+    return sorted({c for _, c in SEED_DATA})

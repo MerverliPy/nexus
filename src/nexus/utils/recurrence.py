@@ -2,12 +2,11 @@
 
 import re
 from datetime import UTC, datetime
-from typing import Optional
 
 from dateutil.rrule import rrulestr
 
 
-def next_occurrence(rrule_str: str, after: Optional[datetime] = None) -> Optional[datetime]:
+def next_occurrence(rrule_str: str, after: datetime | None = None) -> datetime | None:
     """Get the next occurrence of a recurring task after a given datetime."""
     if after is None:
         after = datetime.now(UTC)
@@ -29,7 +28,15 @@ def generate_due_dates(rrule_str: str, from_date: datetime, count: int = 5) -> l
 
 def rrule_description(rrule_str: str) -> str:
     """Return a human-readable description of an RRULE string."""
-    day_map = {"MO": "Mon", "TU": "Tue", "WE": "Wed", "TH": "Thu", "FR": "Fri", "SA": "Sat", "SU": "Sun"}
+    day_map = {
+        "MO": "Mon",
+        "TU": "Tue",
+        "WE": "Wed",
+        "TH": "Thu",
+        "FR": "Fri",
+        "SA": "Sat",
+        "SU": "Sun",
+    }
     freq_upper = rrule_str.upper()
 
     try:
@@ -40,15 +47,15 @@ def rrule_description(rrule_str: str) -> str:
     parts = ["Repeats"]
 
     if "FREQ=DAILY" in freq_upper:
-        m = re.search(r'INTERVAL=(\d+)', freq_upper)
+        m = re.search(r"INTERVAL=(\d+)", freq_upper)
         interval = f" every {m.group(1)} days" if (m and int(m.group(1)) > 1) else " daily"
         parts.append(interval)
     elif "FREQ=WEEKLY" in freq_upper:
-        m = re.search(r'INTERVAL=(\d+)', freq_upper)
+        m = re.search(r"INTERVAL=(\d+)", freq_upper)
         interval = f" every {m.group(1)} weeks" if (m and int(m.group(1)) > 1) else " weekly"
         parts.append(interval)
 
-        byday_match = re.search(r'BYDAY=([A-Z,]+)', freq_upper)
+        byday_match = re.search(r"BYDAY=([A-Z,]+)", freq_upper)
         if byday_match:
             days = [day_map.get(d, d) for d in byday_match.group(1).split(",")]
             parts.append(f"on {', '.join(days)}")

@@ -1,10 +1,9 @@
 """OCR engine — receipt image processing, text extraction, and parsing."""
 
 import re
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
 from pathlib import Path
-from typing import Optional
 
 import cv2
 import numpy as np
@@ -18,9 +17,9 @@ class OCRResult:
         self,
         raw_text: str,
         confidence: float,
-        vendor: Optional[str] = None,
-        amount: Optional[Decimal] = None,
-        tx_date: Optional[date] = None,
+        vendor: str | None = None,
+        amount: Decimal | None = None,
+        tx_date: date | None = None,
     ):
         self.raw_text = raw_text
         self.confidence = confidence  # 0.0 - 1.0
@@ -61,7 +60,6 @@ def extract_text(image: np.ndarray) -> tuple[str, float]:
     # Build full text
     text_lines = []
     current_line = []
-    prev_left = 0
     prev_top = 0
 
     for i in range(len(data["text"])):
@@ -73,7 +71,6 @@ def extract_text(image: np.ndarray) -> tuple[str, float]:
             text_lines.append(" ".join(current_line))
             current_line = []
         current_line.append(text)
-        prev_left = data["left"][i]
         prev_top = data["top"][i]
 
     if current_line:
@@ -82,7 +79,7 @@ def extract_text(image: np.ndarray) -> tuple[str, float]:
     return "\n".join(text_lines), mean_conf
 
 
-def parse_vendor(text: str) -> Optional[str]:
+def parse_vendor(text: str) -> str | None:
     """Extract vendor/merchant name from OCR text."""
     lines = text.strip().split("\n")
 
@@ -99,7 +96,7 @@ def parse_vendor(text: str) -> Optional[str]:
     return None
 
 
-def parse_amount(text: str) -> Optional[Decimal]:
+def parse_amount(text: str) -> Decimal | None:
     """Extract total amount from OCR text."""
     # Look for "TOTAL", "AMOUNT", "BALANCE DUE" followed by a dollar amount
     patterns = [
@@ -127,7 +124,7 @@ def parse_amount(text: str) -> Optional[Decimal]:
     return None
 
 
-def parse_date(text: str) -> Optional[date]:
+def parse_date(text: str) -> date | None:
     """Extract transaction date from OCR text."""
     from dateparser import parse as dp_parse
 
@@ -174,7 +171,9 @@ def process_receipt(image_path: str | Path) -> OCRResult:
     amount = parse_amount(raw_text)
     tx_date = parse_date(raw_text)
 
-    conf = confidence_score(raw_text, ocr_conf, vendor is not None, amount is not None, tx_date is not None)
+    conf = confidence_score(
+        raw_text, ocr_conf, vendor is not None, amount is not None, tx_date is not None
+    )
 
     return OCRResult(
         raw_text=raw_text,

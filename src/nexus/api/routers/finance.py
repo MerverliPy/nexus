@@ -6,21 +6,20 @@ import tempfile
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from nexus.api.ws_manager import manager
 from nexus.database import get_db
 from nexus.models.finance import Account, Transaction
 from nexus.models.user import User
-from nexus.utils.dependencies import get_current_user
-from nexus.api.ws_manager import manager
-from nexus.utils.ocr import process_receipt
 from nexus.utils.categorizer import predict_category, record_correction
-from nexus.utils.storage import upload_receipt_bytes, ensure_buckets
+from nexus.utils.dependencies import get_current_user
+from nexus.utils.ocr import process_receipt
+from nexus.utils.storage import ensure_buckets, upload_receipt_bytes
 
 router = APIRouter(prefix="/api/v1/finance", tags=["finance"])
 
@@ -31,25 +30,25 @@ router = APIRouter(prefix="/api/v1/finance", tags=["finance"])
 class AccountCreate(BaseModel):
     name: str
     account_type: str  # checking, savings, credit_card, investment
-    institution: Optional[str] = None
-    balance: Optional[Decimal] = Decimal(0)
+    institution: str | None = None
+    balance: Decimal | None = Decimal(0)
 
 
 class AccountUpdate(BaseModel):
-    name: Optional[str] = None
-    account_type: Optional[str] = None
-    institution: Optional[str] = None
-    balance: Optional[Decimal] = None
+    name: str | None = None
+    account_type: str | None = None
+    institution: str | None = None
+    balance: Decimal | None = None
 
 
 class AccountResponse(BaseModel):
     id: int
     name: str
     account_type: str
-    institution: Optional[str] = None
+    institution: str | None = None
     balance: Decimal
     is_active: bool
-    last_synced_at: Optional[datetime] = None
+    last_synced_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -57,35 +56,35 @@ class AccountResponse(BaseModel):
 
 
 class TransactionCreate(BaseModel):
-    account_id: Optional[int] = None
+    account_id: int | None = None
     amount: Decimal
-    vendor: Optional[str] = None
-    category: Optional[str] = None
-    description: Optional[str] = None
+    vendor: str | None = None
+    category: str | None = None
+    description: str | None = None
     transaction_date: date
     is_verified: bool = False
 
 
 class TransactionUpdate(BaseModel):
-    account_id: Optional[int] = None
-    amount: Optional[Decimal] = None
-    vendor: Optional[str] = None
-    category: Optional[str] = None
-    description: Optional[str] = None
-    transaction_date: Optional[date] = None
-    is_verified: Optional[bool] = None
+    account_id: int | None = None
+    amount: Decimal | None = None
+    vendor: str | None = None
+    category: str | None = None
+    description: str | None = None
+    transaction_date: date | None = None
+    is_verified: bool | None = None
 
 
 class TransactionResponse(BaseModel):
     id: int
-    account_id: Optional[int] = None
+    account_id: int | None = None
     amount: Decimal
-    vendor: Optional[str] = None
-    category: Optional[str] = None
-    description: Optional[str] = None
+    vendor: str | None = None
+    category: str | None = None
+    description: str | None = None
     transaction_date: date
     is_verified: bool
-    receipt_url: Optional[str] = None
+    receipt_url: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -137,9 +136,7 @@ async def list_accounts(
     db: AsyncSession = Depends(get_db),
 ):
     """List all accounts for the authenticated user."""
-    result = await db.execute(
-        select(Account).where(Account.user_id == user.id, Account.is_active == True)
-    )
+    result = await db.execute(select(Account).where(Account.user_id == user.id, Account.is_active))
     return result.scalars().all()
 
 
@@ -206,7 +203,9 @@ async def delete_account(
 # ── Transaction Endpoints ────────────────────────────────────────────────
 
 
-@router.post("/transactions", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/transactions", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_transaction(
     body: TransactionCreate,
     user: User = Depends(get_current_user),
@@ -233,11 +232,11 @@ async def create_transaction(
 
 @router.get("/transactions", response_model=list[TransactionResponse])
 async def list_transactions(
-    vendor: Optional[str] = Query(None),
-    category: Optional[str] = Query(None),
-    account_id: Optional[int] = Query(None),
-    date_from: Optional[date] = Query(None, alias="from"),
-    date_to: Optional[date] = Query(None, alias="to"),
+    vendor: str | None = Query(None),
+    category: str | None = Query(None),
+    account_id: int | None = Query(None),
+    date_from: date | None = Query(None, alias="from"),
+    date_to: date | None = Query(None, alias="to"),
     limit: int = Query(100, le=500),
     offset: int = Query(0, ge=0),
     user: User = Depends(get_current_user),
@@ -352,7 +351,9 @@ async def import_csv(
     if "date" not in col_map or "amount" not in col_map:
         raise HTTPException(
             status_code=400,
-            detail="CSV must have 'date' and 'amount' columns (auto-detected from: " + ", ".join(reader.fieldnames) + ")",
+            detail="CSV must have 'date' and 'amount' columns (auto-detected from: "
+            + ", ".join(reader.fieldnames)
+            + ")",
         )
 
     imported = 0
@@ -393,8 +394,14 @@ async def import_csv(
                 user_id=user.id,
                 amount=abs(amount),
                 vendor=vendor,
-                category=row.get(col_map.get("category", ""), "") if "category" in col_map else None,
-                description=row.get(col_map.get("description", ""), "") if "description" in col_map else None,
+                category=(
+                    row.get(col_map.get("category", ""), "") if "category" in col_map else None
+                ),
+                description=(
+                    row.get(col_map.get("description", ""), "")
+                    if "description" in col_map
+                    else None
+                ),
                 transaction_date=tx_date,
                 is_verified=False,
             )
@@ -472,8 +479,8 @@ def _parse_amount(value: str) -> Decimal | None:
 
 @router.get("/analytics/spending-by-category")
 async def spending_by_category(
-    date_from: Optional[date] = Query(None, alias="from"),
-    date_to: Optional[date] = Query(None, alias="to"),
+    date_from: date | None = Query(None, alias="from"),
+    date_to: date | None = Query(None, alias="to"),
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -520,13 +527,17 @@ async def monthly_totals(
         Transaction.amount > 0,
     )
 
-    query = query.group_by(
-        extract("year", Transaction.transaction_date),
-        extract("month", Transaction.transaction_date),
-    ).order_by(
-        extract("year", Transaction.transaction_date).desc(),
-        extract("month", Transaction.transaction_date).desc(),
-    ).limit(months)
+    query = (
+        query.group_by(
+            extract("year", Transaction.transaction_date),
+            extract("month", Transaction.transaction_date),
+        )
+        .order_by(
+            extract("year", Transaction.transaction_date).desc(),
+            extract("month", Transaction.transaction_date).desc(),
+        )
+        .limit(months)
+    )
 
     result = await db.execute(query)
     rows = result.all()

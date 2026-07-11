@@ -3,10 +3,10 @@
 from fastapi import APIRouter, WebSocket, status
 from sqlalchemy import select
 
+from nexus.api.ws_manager import manager
 from nexus.database import AsyncSessionLocal
 from nexus.models.user import User
 from nexus.utils.security import decode_token
-from nexus.api.ws_manager import manager
 
 router = APIRouter()
 

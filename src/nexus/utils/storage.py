@@ -3,10 +3,8 @@
 import io
 from datetime import timedelta
 from pathlib import Path
-from typing import Optional
 
 from minio import Minio
-from minio.error import S3Error
 
 # MinIO configuration
 MINIO_ENDPOINT = "localhost:9000"
@@ -33,7 +31,7 @@ def ensure_buckets() -> None:
             client.make_bucket(bucket)
 
 
-def upload_receipt(file_path: str | Path, object_name: Optional[str] = None) -> str:
+def upload_receipt(file_path: str | Path, object_name: str | None = None) -> str:
     """Upload a receipt image to MinIO and return the URL.
 
     Returns a presigned URL for viewing.

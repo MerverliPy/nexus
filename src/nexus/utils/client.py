@@ -212,7 +212,9 @@ def list_accounts() -> list[dict]:
     raise APIError(resp)
 
 
-def create_account(name: str, account_type: str, institution: str | None = None, balance: float = 0) -> dict:
+def create_account(
+    name: str, account_type: str, institution: str | None = None, balance: float = 0
+) -> dict:
     """Create a new account."""
     body: dict = {"name": name, "account_type": account_type, "balance": balance}
     if institution:

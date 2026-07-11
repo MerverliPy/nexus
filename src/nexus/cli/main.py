@@ -108,12 +108,17 @@ def task_add(title: str, desc: str | None, priority: int, due: str | None, recur
         console.print("[red]Not logged in. Run 'nexus auth login' first.[/red]")
         sys.exit(1)
     try:
-        t = api.create_task(title, description=desc, priority=priority, due_date=due, recurrence_rule=recur)
-        parts = [f"[green]Created task #{t['id']}:[/green] {t['title']} (priority {t['priority']}, status: {t['status']})"]
+        t = api.create_task(
+            title, description=desc, priority=priority, due_date=due, recurrence_rule=recur
+        )
+        parts = [
+            f"[green]Created task #{t['id']}:[/green] {t['title']} (priority {t['priority']}, status: {t['status']})"
+        ]
         if t.get("due_date"):
             parts.append(f"due {t['due_date'][:10]}")
         if t.get("recurrence_rule"):
             from nexus.utils.recurrence import rrule_description
+
             parts.append(f"recurring: {rrule_description(t['recurrence_rule'])}")
         console.print(" ".join(parts))
     except APIError as e:
@@ -196,7 +201,7 @@ def finance_log(amount: float, vendor: str, category: str, account_id: int, desc
         amt = float(tx["amount"])
         console.print(
             f"[{color}]Logged:[/{color}] {tx['vendor']} "
-            f"[bold]{sign}\${amt:.2f}[/bold] "
+            rf"[bold]{sign}\${amt:.2f}[/bold] "
             f"({tx.get('category') or 'uncategorized'})"
         )
     except APIError as e:
@@ -220,8 +225,8 @@ def finance_list(category: str, vendor: str, month: str, limit: int):
         if month:
             date_from = f"{month}-01"
             # Calculate end of month
-            from datetime import datetime
             from calendar import monthrange
+
             y, m = map(int, month.split("-"))
             _, last_day = monthrange(y, m)
             date_to = f"{month}-{last_day}"
@@ -251,12 +256,12 @@ def finance_list(category: str, vendor: str, month: str, limit: int):
                 str(tx["id"]),
                 tx["transaction_date"],
                 tx.get("vendor") or "[dim]—[/dim]",
-                f"[{color}]{sign}\${abs(amt):.2f}[/{color}]",
+                rf"[{color}]{sign}\${abs(amt):.2f}[/{color}]",
                 tx.get("category") or "[dim]—[/dim]",
             )
 
         console.print(table)
-        console.print(f"[bold]Total expenses:[/bold] \${total:.2f}")
+        console.print(rf"[bold]Total expenses:[/bold] \${total:.2f}")
     except APIError as e:
         console.print(f"[red]{e.detail}[/red]")
         sys.exit(1)
@@ -271,7 +276,9 @@ def finance_accounts():
     try:
         accounts = api.list_accounts()
         if not accounts:
-            console.print("[dim]No accounts found. Create one with 'nexus finance add-account'[/dim]")
+            console.print(
+                "[dim]No accounts found. Create one with 'nexus finance add-account'[/dim]"
+            )
             return
         table = Table(title="Accounts")
         table.add_column("ID", style="cyan")
@@ -286,7 +293,7 @@ def finance_accounts():
                 str(a["id"]),
                 a["name"],
                 a["account_type"],
-                f"[{color}]\${bal:.2f}[/{color}]",
+                rf"[{color}]\${bal:.2f}[/{color}]",
                 a.get("institution") or "[dim]—[/dim]",
             )
         console.print(table)
@@ -307,7 +314,9 @@ def finance_add_account(name: str, type: str, institution: str, balance: float):
         sys.exit(1)
     try:
         acct = api.create_account(name, type, institution=institution, balance=balance)
-        console.print(f"[green]Created account #{acct['id']}:[/green] {acct['name']} ({acct['account_type']})")
+        console.print(
+            f"[green]Created account #{acct['id']}:[/green] {acct['name']} ({acct['account_type']})"
+        )
     except APIError as e:
         console.print(f"[red]{e.detail}[/red]")
         sys.exit(1)
@@ -342,8 +351,10 @@ def finance_upload(filepath: str):
         console.print("[red]Not logged in.[/red]")
         sys.exit(1)
     try:
-        import httpx
         import os
+
+        import httpx
+
         token = api.get_access_token()
         base_url = os.environ.get("NEXUS_API_URL", "http://localhost:8000")
         with open(filepath, "rb") as f:
@@ -374,7 +385,9 @@ def finance_upload(filepath: str):
         if pred.get("category"):
             console.print(f"  [green]Suggested category: {pred['category']}[/green]")
         else:
-            console.print("  [yellow]Category: uncertain (use 'nexus finance categorize TX_ID')[/yellow]")
+            console.print(
+                "  [yellow]Category: uncertain (use 'nexus finance categorize TX_ID')[/yellow]"
+            )
 
         console.print(f"  [dim]Transaction #{tx['id']} created[/dim]")
     except APIError as e:
@@ -392,17 +405,29 @@ def finance_categorize(transaction_id: int, category: str):
         sys.exit(1)
     try:
         if category:
-            resp = api._request("POST", f"/api/v1/finance/transactions/{transaction_id}/correct-category", json_body={"category": category})
+            resp = api._request(
+                "POST",
+                f"/api/v1/finance/transactions/{transaction_id}/correct-category",
+                json_body={"category": category},
+            )
             console.print(f"[green]Updated to '{category}'[/green]")
         else:
-            resp = api._request("POST", f"/api/v1/finance/transactions/{transaction_id}/predict-category")
+            resp = api._request(
+                "POST", f"/api/v1/finance/transactions/{transaction_id}/predict-category"
+            )
             data = resp.json()
             if data.get("category"):
                 conf = data["confidence"]
-                console.print(f"Predicted: [green]{data['category']}[/green] (confidence: {conf:.2f})")
-                console.print(f"To accept: [dim]nexus finance categorize {transaction_id} --category {data['category']}[/dim]")
+                console.print(
+                    f"Predicted: [green]{data['category']}[/green] (confidence: {conf:.2f})"
+                )
+                console.print(
+                    f"To accept: [dim]nexus finance categorize {transaction_id} --category {data['category']}[/dim]"
+                )
             else:
-                console.print(f"[yellow]Could not predict ({data.get('detail', 'low confidence')})[/yellow]")
+                console.print(
+                    f"[yellow]Could not predict ({data.get('detail', 'low confidence')})[/yellow]"
+                )
     except APIError as e:
         console.print(f"[red]{e.detail}[/red]")
         sys.exit(1)

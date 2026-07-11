@@ -7,11 +7,11 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from nexus.api.ws_manager import manager
 from nexus.database import get_db
 from nexus.models.task import Task
 from nexus.models.user import User
 from nexus.utils.dependencies import get_current_user
-from nexus.api.ws_manager import manager
 from nexus.utils.recurrence import next_occurrence
 
 router = APIRouter(prefix="/api/v1/tasks", tags=["tasks"])
