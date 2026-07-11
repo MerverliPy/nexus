@@ -554,17 +554,76 @@ def note():
 
 @note.command("create")
 @click.argument("title")
-@click.option("--project", help="Research project name")
-def note_create(title: str, project: str):
+@click.option("--content", "-c", prompt=True, help="Note body (markdown, supports [[links]])")
+@click.option("--project-id", type=int, default=None, help="Research project ID")
+@click.option("--tag", "tags", multiple=True, help="Tag (repeatable)")
+def note_create(title: str, content: str, project_id: int | None, tags: tuple[str, ...]):
     """Create a new note."""
-    console.print("[yellow]TODO: Create note (coming in Phase 4)[/yellow]")
+    if not api.logged_in():
+        console.print("[yellow]Not logged in. Use 'nexus auth login' first.[/yellow]")
+        sys.exit(1)
+    try:
+        result = api.create_note(title, content, project_id, list(tags) or None)
+        embed_note = " (embedded)" if result.get("has_embedding") else " (full-text only)"
+        console.print(f"[green]Created note #{result['id']}: {result['title']}[/green]{embed_note}")
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
 
 
 @note.command("search")
 @click.argument("query")
-def note_search(query: str):
-    """Search notes semantically."""
-    console.print("[yellow]TODO: Search notes (coming in Phase 4)[/yellow]")
+@click.option("--limit", type=int, default=10, help="Max results")
+def note_search(query: str, limit: int):
+    """Search notes (semantic when embeddings available, else full-text)."""
+    if not api.logged_in():
+        console.print("[yellow]Not logged in. Use 'nexus auth login' first.[/yellow]")
+        sys.exit(1)
+    try:
+        results = api.search_notes(query, limit)
+        if not results:
+            console.print("[yellow]No matching notes.[/yellow]")
+            return
+        table = Table("ID", "Title", "Score", "Method", "Snippet")
+        for r in results:
+            table.add_row(
+                str(r["id"]),
+                r["title"],
+                f"{r['score']:.3f}",
+                r["method"],
+                (r["snippet"] or "").replace("\n", " ")[:60],
+            )
+        console.print(table)
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
+
+
+@note.command("list")
+@click.option("--project-id", type=int, default=None, help="Filter by project ID")
+@click.option("--tag", default=None, help="Filter by tag")
+def note_list(project_id: int | None, tag: str | None):
+    """List notes."""
+    if not api.logged_in():
+        console.print("[yellow]Not logged in. Use 'nexus auth login' first.[/yellow]")
+        sys.exit(1)
+    try:
+        notes = api.list_notes(project_id, tag)
+        if not notes:
+            console.print("[yellow]No notes.[/yellow]")
+            return
+        table = Table("ID", "Title", "Tags", "Embedded")
+        for n in notes:
+            table.add_row(
+                str(n["id"]),
+                n["title"],
+                ", ".join(n.get("tags") or []),
+                "✓" if n.get("has_embedding") else "",
+            )
+        console.print(table)
+    except APIError as e:
+        console.print(f"[red]{e.detail}[/red]")
+        sys.exit(1)
 
 
 # ── System ─────────────────────────────────────────────────────────────────

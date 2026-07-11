@@ -217,6 +217,51 @@ def revoke_all_sessions() -> dict:
     raise APIError(resp)
 
 
+# ── Note / Research Commands ────────────────────────────────────────────
+
+
+def create_note(
+    title: str,
+    content: str,
+    project_id: int | None = None,
+    tags: list[str] | None = None,
+) -> dict:
+    """Create a note."""
+    body: dict = {"title": title, "content": content}
+    if project_id:
+        body["project_id"] = project_id
+    if tags:
+        body["tags"] = tags
+    resp = _request("POST", "/api/v1/research/notes", json_body=body)
+    if resp.status_code == 201:
+        return resp.json()
+    raise APIError(resp)
+
+
+def search_notes(query: str, limit: int = 10) -> list[dict]:
+    """Semantic/full-text search over notes."""
+    resp = _request(
+        "POST", "/api/v1/research/notes/search", json_body={"query": query, "limit": limit}
+    )
+    if resp.status_code == 200:
+        return resp.json()
+    raise APIError(resp)
+
+
+def list_notes(project_id: int | None = None, tag: str | None = None) -> list[dict]:
+    """List notes with optional filters."""
+    params = []
+    if project_id:
+        params.append(f"project_id={project_id}")
+    if tag:
+        params.append(f"tag={tag}")
+    qs = "?" + "&".join(params) if params else ""
+    resp = _request("GET", f"/api/v1/research/notes{qs}")
+    if resp.status_code == 200:
+        return resp.json()
+    raise APIError(resp)
+
+
 # ── Task Commands ──────────────────────────────────────────────────────
 
 

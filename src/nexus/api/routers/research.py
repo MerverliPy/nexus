@@ -1,0 +1,359 @@
+"""Research & knowledge router — notes, wiki-links, projects, semantic search."""
+
+from __future__ import annotations
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
+from sqlalchemy import func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from nexus.database import get_db
+from nexus.models.research import Note, NoteLink, ResearchProject
+from nexus.models.user import User
+from nexus.services.embeddings import embed, is_available
+from nexus.utils.dependencies import get_current_user
+from nexus.utils.wikilinks import extract_wikilinks
+
+router = APIRouter(prefix="/api/v1/research", tags=["research"])
+
+
+# ── Schemas ──────────────────────────────────────────────────────────────
+
+
+class NoteCreate(BaseModel):
+    title: str
+    content: str
+    project_id: int | None = None
+    tags: list[str] | None = None
+    source_url: str | None = None
+    source_type: str | None = None
+
+
+class NoteUpdate(BaseModel):
+    title: str | None = None
+    content: str | None = None
+    project_id: int | None = None
+    tags: list[str] | None = None
+
+
+class NoteResponse(BaseModel):
+    id: int
+    title: str
+    content: str
+    project_id: int | None
+    tags: list[str] | None
+    source_url: str | None
+    source_type: str | None
+    has_embedding: bool = False
+
+    model_config = {"from_attributes": True}
+
+
+class NoteLinkInfo(BaseModel):
+    id: int
+    title: str
+
+
+class BacklinksResponse(BaseModel):
+    note_id: int
+    outgoing: list[NoteLinkInfo]
+    incoming: list[NoteLinkInfo]
+
+
+class SearchRequest(BaseModel):
+    query: str
+    limit: int = 10
+
+
+class SearchResult(BaseModel):
+    id: int
+    title: str
+    snippet: str
+    score: float
+    method: str  # "semantic" or "fulltext"
+
+
+class ProjectCreate(BaseModel):
+    name: str
+    description: str | None = None
+
+
+class ProjectResponse(BaseModel):
+    id: int
+    name: str
+    description: str | None
+    status: str
+
+    model_config = {"from_attributes": True}
+
+
+# ── Helpers ──────────────────────────────────────────────────────────────
+
+
+async def _resolve_links(db: AsyncSession, note: Note, user_id: int) -> int:
+    """Parse [[wiki-links]] in note.content, create NoteLink rows to existing
+    notes owned by the same user. Returns the number of links created.
+    """
+    titles = extract_wikilinks(note.content)
+    if not titles:
+        return 0
+
+    # Remove existing outgoing links (rebuild on each save)
+    existing = await db.execute(select(NoteLink).where(NoteLink.from_note_id == note.id))
+    for link in existing.scalars().all():
+        await db.delete(link)
+
+    created = 0
+    for title in titles:
+        target = await db.execute(
+            select(Note).where(
+                Note.user_id == user_id,
+                func.lower(Note.title) == title.lower(),
+                Note.id != note.id,
+            )
+        )
+        target_note = target.scalar_one_or_none()
+        if target_note is not None:
+            db.add(NoteLink(from_note_id=note.id, to_note_id=target_note.id))
+            created += 1
+    return created
+
+
+def _to_response(note: Note) -> NoteResponse:
+    return NoteResponse(
+        id=note.id,
+        title=note.title,
+        content=note.content,
+        project_id=note.project_id,
+        tags=list(note.tags) if note.tags else None,
+        source_url=note.source_url,
+        source_type=note.source_type,
+        has_embedding=note.embedding is not None,
+    )
+
+
+# ── Note endpoints ─────────────────────────────────────────────────────────
+
+
+@router.post("/notes", response_model=NoteResponse, status_code=status.HTTP_201_CREATED)
+async def create_note(
+    body: NoteCreate,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> NoteResponse:
+    """Create a note, generate an embedding, and resolve [[wiki-links]]."""
+    note = Note(
+        user_id=user.id,
+        project_id=body.project_id,
+        title=body.title,
+        content=body.content,
+        tags=body.tags,
+        source_url=body.source_url,
+        source_type=body.source_type,
+    )
+    # Embed title + content (None if no provider available)
+    note.embedding = embed(f"{body.title}\n\n{body.content}")
+    db.add(note)
+    await db.flush()
+    await _resolve_links(db, note, user.id)
+    await db.refresh(note)
+    return _to_response(note)
+
+
+@router.get("/notes", response_model=list[NoteResponse])
+async def list_notes(
+    project_id: int | None = Query(None),
+    tag: str | None = Query(None),
+    limit: int = Query(50, ge=1, le=200),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[NoteResponse]:
+    """List notes, optionally filtered by project or tag."""
+    q = select(Note).where(Note.user_id == user.id)
+    if project_id is not None:
+        q = q.where(Note.project_id == project_id)
+    if tag:
+        q = q.where(Note.tags.any(tag))
+    q = q.order_by(Note.updated_at.desc()).limit(limit)
+    result = await db.execute(q)
+    return [_to_response(n) for n in result.scalars().all()]
+
+
+@router.get("/notes/{note_id}", response_model=NoteResponse)
+async def get_note(
+    note_id: int,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> NoteResponse:
+    result = await db.execute(select(Note).where(Note.id == note_id, Note.user_id == user.id))
+    note = result.scalar_one_or_none()
+    if note is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
+    return _to_response(note)
+
+
+@router.put("/notes/{note_id}", response_model=NoteResponse)
+async def update_note(
+    note_id: int,
+    body: NoteUpdate,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> NoteResponse:
+    result = await db.execute(select(Note).where(Note.id == note_id, Note.user_id == user.id))
+    note = result.scalar_one_or_none()
+    if note is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
+
+    if body.title is not None:
+        note.title = body.title
+    if body.content is not None:
+        note.content = body.content
+    if body.project_id is not None:
+        note.project_id = body.project_id
+    if body.tags is not None:
+        note.tags = body.tags
+
+    # Re-embed and re-resolve links if content/title changed
+    if body.title is not None or body.content is not None:
+        note.embedding = embed(f"{note.title}\n\n{note.content}")
+        await db.flush()
+        await _resolve_links(db, note, user.id)
+
+    await db.flush()
+    await db.refresh(note)
+    return _to_response(note)
+
+
+@router.delete("/notes/{note_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_note(
+    note_id: int,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    result = await db.execute(select(Note).where(Note.id == note_id, Note.user_id == user.id))
+    note = result.scalar_one_or_none()
+    if note is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
+    await db.delete(note)
+
+
+@router.get("/notes/{note_id}/backlinks", response_model=BacklinksResponse)
+async def get_backlinks(
+    note_id: int,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> BacklinksResponse:
+    """Return outgoing and incoming links for a note."""
+    result = await db.execute(select(Note).where(Note.id == note_id, Note.user_id == user.id))
+    note = result.scalar_one_or_none()
+    if note is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
+
+    # Outgoing
+    out_q = await db.execute(
+        select(Note.id, Note.title)
+        .join(NoteLink, NoteLink.to_note_id == Note.id)
+        .where(NoteLink.from_note_id == note_id)
+    )
+    outgoing = [NoteLinkInfo(id=r.id, title=r.title) for r in out_q.all()]
+
+    # Incoming
+    in_q = await db.execute(
+        select(Note.id, Note.title)
+        .join(NoteLink, NoteLink.from_note_id == Note.id)
+        .where(NoteLink.to_note_id == note_id)
+    )
+    incoming = [NoteLinkInfo(id=r.id, title=r.title) for r in in_q.all()]
+
+    return BacklinksResponse(note_id=note_id, outgoing=outgoing, incoming=incoming)
+
+
+# ── Search ───────────────────────────────────────────────────────────────
+
+
+@router.post("/notes/search", response_model=list[SearchResult])
+async def search_notes(
+    body: SearchRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[SearchResult]:
+    """Hybrid search: semantic (pgvector) when embeddings exist, else full-text.
+
+    Falls back to full-text search over title+content when no embedding
+    provider is configured.
+    """
+    query_vec = embed(body.query) if is_available() else None
+
+    if query_vec is not None:
+        # Semantic search via cosine distance
+        distance = Note.embedding.cosine_distance(query_vec)
+        result = await db.execute(
+            select(Note, distance.label("dist"))
+            .where(Note.user_id == user.id, Note.embedding.isnot(None))
+            .order_by("dist")
+            .limit(body.limit)
+        )
+        return [
+            SearchResult(
+                id=row.Note.id,
+                title=row.Note.title,
+                snippet=row.Note.content[:200],
+                score=round(1.0 - float(row.dist), 4),
+                method="semantic",
+            )
+            for row in result.all()
+        ]
+
+    # Full-text fallback (works offline, no embeddings required)
+    pattern = f"%{body.query}%"
+    result = await db.execute(
+        select(Note)
+        .where(
+            Note.user_id == user.id,
+            or_(Note.title.ilike(pattern), Note.content.ilike(pattern)),
+        )
+        .order_by(Note.updated_at.desc())
+        .limit(body.limit)
+    )
+    notes = result.scalars().all()
+    return [
+        SearchResult(
+            id=n.id,
+            title=n.title,
+            snippet=n.content[:200],
+            score=1.0,
+            method="fulltext",
+        )
+        for n in notes
+    ]
+
+
+# ── Project endpoints ──────────────────────────────────────────────────────
+
+
+@router.post("/projects", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
+async def create_project(
+    body: ProjectCreate,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ProjectResponse:
+    project = ResearchProject(
+        user_id=user.id, name=body.name, description=body.description, status="active"
+    )
+    db.add(project)
+    await db.flush()
+    await db.refresh(project)
+    return ProjectResponse.model_validate(project)
+
+
+@router.get("/projects", response_model=list[ProjectResponse])
+async def list_projects(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[ProjectResponse]:
+    result = await db.execute(
+        select(ResearchProject)
+        .where(ResearchProject.user_id == user.id)
+        .order_by(ResearchProject.created_at.desc())
+    )
+    return [ProjectResponse.model_validate(p) for p in result.scalars().all()]

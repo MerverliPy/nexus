@@ -6,7 +6,7 @@ import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from nexus.api.routers import audit, auth, finance, tasks, ws
+from nexus.api.routers import audit, auth, finance, research, tasks, ws
 from nexus.config import get_settings
 from nexus.database import Base, engine
 from nexus.utils.metrics import PrometheusMiddleware, metrics_endpoint
@@ -70,4 +70,5 @@ app.include_router(auth.router)
 app.include_router(finance.router)
 app.include_router(tasks.router)
 app.include_router(audit.router)
+app.include_router(research.router)
 app.include_router(ws.router)
