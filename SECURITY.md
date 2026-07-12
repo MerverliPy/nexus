@@ -40,10 +40,10 @@ Send an email to **calvinbrady8@gmail.com** with:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.1.x   | :white_check_mark: |
-| < 0.1   | :x:                |
+| 1.0.x   | :white_check_mark: |
+| < 1.0   | :x:                |
 
-> **Note:** Nexus is in early development (pre-1.0). Security patches are released as soon as possible, typically within 7-14 days of confirmed vulnerability.
+> **Note:** Nexus 1.0 includes all 5 phases (Foundation, Finance, Security/Production, Research, Advanced Features). Security patches are released as soon as possible, typically within 7-14 days of confirmed vulnerability.
 
 ---
 

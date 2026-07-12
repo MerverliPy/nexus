@@ -30,7 +30,7 @@ Before starting, ensure you have:
 - [ ] **Git** installed (`git --version`)
 - [ ] **Terminal/Shell** access (Bash, Zsh, PowerShell, etc.)
 - [ ] **Text Editor** (VSCode, Sublime, Vim, etc.)
-- [ ] **OpenRouter API key** (free tier available at https://openrouter.ai)
+- [ ] **OpenAI API key** (required for voice features — get at https://platform.openai.com/api-keys)
 
 ---
 
@@ -71,7 +71,7 @@ chmod +x scripts/setup.sh
 ✓ Environment file created at .env
 
 Next steps:
-  1. Edit .env and add your OPENROUTER_API_KEY
+  1. Edit .env and add your OPENAI_API_KEY
   2. Activate venv: source venv/bin/activate
   3. Start API: uvicorn nexus.api.main:app
 ```
@@ -99,8 +99,8 @@ Open `.env` in your text editor and update these critical values:
 NEXUS_SECRET_KEY=<paste_generated_key_here>
 NEXUS_ENCRYPTION_KEY=<paste_generated_key_here>
 
-# Add your OpenRouter API key (get free key at https://openrouter.ai/keys)
-OPENROUTER_API_KEY=sk-or-v1-...
+# Add your OpenAI API key (required for voice features and embeddings)
+OPENAI_API_KEY=sk-...
 
 # Optional: Change default passwords (recommended for production)
 NEXUS_DB_PASSWORD=your_strong_password_here
