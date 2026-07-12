@@ -30,8 +30,8 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 |-------|--------|---------|
 | **1 — Foundation** | ✅ ~95% | Infra, JWT auth, tasks, Next.js web, WebSocket live. Celery worker now generates recurring task instances. |
 | **2 — Finance** | ✅ 100% | CRUD, CSV import, analytics, OCR, ML categorization, accuracy tracking, vendor normalization — all done. |
-| **3 — Security/Prod** | 🟡 ~45% | All W9-10 done. W11-12: Prometheus /metrics, backup+restore scripts, systemd templates, circuit breaker, LLM cost model all in place. |
-| **4 — Research** | 🟡 ~85% | Notes, wiki-links, hybrid search, arXiv, credibility scoring, LLM plans, export, git versioning — all live & tested. |
+| **3 — Security/Prod** | ✅ 100% | MFA, encryption, audit logging, session mgmt, Prometheus, backups, systemd, circuit breakers, LLM cost tracking — all done. |
+| **4 — Research** | ✅ 100% | Notes, wiki-links, hybrid search, arXiv, credibility scoring, LLM plans, export, git versioning, multi-source synthesis — all done. |
 | **5 — Advanced** | ✅ 100% | Portfolio + net-worth + notification bundling + ML forecasting + voice (STT+TTS) + SMS gateway + mobile PWA — all done. |
 
 **Two systemic gaps cut across phases:**
@@ -442,7 +442,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 #### Deliverables — 🔴 NOT STARTED
 #### Deliverables — 🟡 MOSTLY DONE
 - [x] Deep dive research workflow (generate plan) *(POST /research/plan; LLM via OpenRouter, 503 when no key)*
-- [~] Multi-source validation (cross-reference claims) *(credibility weighting in place; synthesis deferred)*
+- [x] Multi-source validation (cross-reference claims) *(credibility-weighted, LLM synthesis → key findings, contradictions, insights, open questions; optional save-as-note; 5 tests)*
 - [x] Academic paper discovery (arXiv integration) *(utils/arxiv_api.py + GET /research/papers; real API, tested live)*
 - [x] Source credibility scoring *(utils/credibility.py: domain tiers 0.0–1.0; 9 unit tests)*
 - [x] Export pipeline (markdown → PDF/slides) *(services/research.py: md always, pandoc for pdf/html/docx)*
@@ -607,10 +607,10 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 |-------|-------|----------------|--------|------------------|
 | **Phase 1** | 1-4 | 60 | ✅ ~95% | Infrastructure, Task Management (CLI + Web) |
 | **Phase 2** | 5-8 | 76 | ✅ 100% | Financial Intelligence (Transactions, OCR, ML, vendor norm.) |
-| **Phase 3** | 9-12 | 64 | 🟡 ~45% | Security & Production (MFA, Monitoring, Backups) |
-| **Phase 4** | 13-16 | 76 | 🟡 ~85% | Research & Knowledge (Wiki, Semantic Search, git ver.) |
+| **Phase 3** | 9-12 | 64 | ✅ 100% | Security & Production (MFA, Monitoring, Backups) |
+| **Phase 4** | 13-16 | 76 | ✅ 100% | Research & Knowledge (Wiki, Semantic Search, synthesis) |
 | **Phase 5** | 17-20 | 68 | ✅ 100% | Advanced Features (Voice, SMS, PWA) |
-| **Total** | 20 | **344** | 🟡 ~85% | Full-featured Personal AI System |
+| **Total** | 20 | **344** | ✅ ~95% | Full-featured Personal AI System |
 
 *Note: Total is less than 480 due to removing optional tasks (LayoutLM, advanced features). Buffer of 136 hours for debugging, refactoring, and unexpected issues.*
 

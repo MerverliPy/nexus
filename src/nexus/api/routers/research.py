@@ -11,7 +11,7 @@ from nexus.database import get_db
 from nexus.models.research import Note, NoteLink, ResearchProject
 from nexus.models.user import User
 from nexus.services.embeddings import embed, is_available
-from nexus.services.research import export_note, generate_plan
+from nexus.services.research import export_note, generate_plan, synthesize_sources
 from nexus.utils.credibility import score as credibility_score
 from nexus.utils.dependencies import get_current_user
 from nexus.utils.wikilinks import extract_wikilinks
@@ -490,6 +490,55 @@ async def search_papers(
         rated["credibility"] = credibility_score(p.get("pdf_url", ""))
         scored.append(ArxivPaper(**rated))
     return scored
+
+
+@router.post("/research/synthesize")
+async def synthesize_research(
+    body: dict,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Synthesize findings from multiple notes into a structured analysis.
+
+    Body: {"note_ids": [1, 2, 3], "save_as_note": true, "project_id": 5}
+    """
+    from nexus.config import get_settings
+
+    note_ids = body.get("note_ids", [])
+    if not isinstance(note_ids, list) or len(note_ids) < 2:
+        raise HTTPException(status_code=400, detail="Provide at least 2 note_ids")
+    save_as_note = body.get("save_as_note", False)
+    project_id = body.get("project_id")
+
+    s = get_settings()
+    result = await synthesize_sources(
+        note_ids,
+        user.id,
+        db,
+        openrouter_api_key=s.openrouter_api_key,
+        default_model=s.llm_default_model,
+    )
+    if result is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Synthesis failed — LLM unavailable or fewer than 2 valid notes found",
+        )
+
+    # Optionally save result as a new note
+    if save_as_note:
+        note = Note(
+            user_id=user.id,
+            project_id=project_id,
+            title=result["title"],
+            content=result["content"],
+            tags=["research", "synthesis"],
+        )
+        db.add(note)
+        await db.flush()
+        await db.refresh(note)
+        result["saved_note_id"] = note.id
+
+    return result
 
 
 # ── Export ──────────────────────────────────────────────────────────────────

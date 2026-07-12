@@ -152,3 +152,131 @@ def _render_markdown(note: dict) -> str:
         note.get("content", ""),
     ]
     return "\n".join(lines)
+
+
+# ── Multi-source synthesis ──────────────────────────────────────────────
+
+
+async def synthesize_sources(
+    note_ids: list[int],
+    user_id: int,
+    db,
+    *,
+    openrouter_api_key: str,
+    default_model: str,
+) -> dict | None:
+    """Synthesize findings from multiple notes using LLM.
+
+    Returns a dict with:
+      - title: suggested title
+      - content: synthesized markdown
+      - key_findings: list[str]
+      - contradictions: list[str]
+      - insights: list[str]
+      - open_questions: list[str]
+      - sources: list of source metadata
+    Or None if synthesis fails.
+    """
+    from sqlalchemy import select
+
+    from nexus.models.research import Note
+    from nexus.utils.credibility import score as credibility_score
+    from nexus.utils.resilience import resilient_request
+
+    # Fetch notes
+    result = await db.execute(
+        select(Note).where(Note.id.in_(note_ids), Note.user_id == user_id)
+    )
+    notes = result.scalars().all()
+
+    if len(notes) < 2:
+        return None
+
+    # Build source list sorted by credibility (highest first)
+    sources = []
+    for n in notes:
+        cred = credibility_score(n.source_url or "")
+        sources.append(
+            {
+                "id": n.id,
+                "title": n.title,
+                "url": n.source_url or "",
+                "content": n.content[:3000],
+                "credibility": cred,
+            }
+        )
+    sources.sort(key=lambda s: s["credibility"], reverse=True)
+
+    # Build LLM prompt
+    source_text = "\n\n---\n\n".join(
+        f"Source {i+1}: {s['title']}\nURL: {s['url']}\nCredibility: {s['credibility']}\n\n{s['content']}"
+        for i, s in enumerate(sources)
+    )
+
+    system = (
+        "You are a research synthesizer. Analyze the provided sources and produce "
+        "a structured synthesis. Return ONLY valid JSON (no markdown wrapping) with keys:\n"
+        '- "title": a concise title summarizing the synthesis\n'
+        '- "key_findings": list of 3-5 key findings\n'
+        '- "contradictions": list of any conflicting claims between sources\n'
+        '- "insights": list of 2-3 novel insights from connecting the sources\n'
+        '- "open_questions": list of 2-3 questions that remain unanswered\n'
+    )
+
+    try:
+        resp = await resilient_request(
+            "POST",
+            "https://openrouter.ai/api/v1/chat/completions",
+            json={
+                "model": default_model,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": f"Synthesize these sources:\n\n{source_text}"},
+                ],
+                "max_tokens": 1500,
+                "temperature": 0.5,
+            },
+            headers={
+                "Authorization": f"Bearer {openrouter_api_key}",
+                "Content-Type": "application/json",
+            },
+        )
+    except Exception:
+        return None
+
+    if resp is None or not openrouter_api_key:
+        return None
+
+    try:
+        body = resp.json()
+        text = body["choices"][0]["message"]["content"]
+        synthesis = json.loads(text)
+    except (json.JSONDecodeError, KeyError, IndexError):
+        return None
+
+    # Build full markdown content
+    md = f"# {synthesis['title']}\n\n"
+    md += "## Key Findings\n\n"
+    for f in synthesis.get("key_findings", []):
+        md += f"- {f}\n"
+    md += "\n## Contradictions\n\n"
+    for c in synthesis.get("contradictions", []):
+        md += f"- {c}\n"
+    md += "\n## Insights\n\n"
+    for i in synthesis.get("insights", []):
+        md += f"- {i}\n"
+    md += "\n## Open Questions\n\n"
+    for q in synthesis.get("open_questions", []):
+        md += f"- {q}\n"
+    md += "\n## Sources\n\n"
+    for s in sources:
+        md += f"- [{s['title']}]({s['url']}) (credibility: {s['credibility']})\n"
+
+    return {
+        **synthesis,
+        "content": md,
+        "sources": [
+            {"id": s["id"], "title": s["title"], "url": s["url"], "credibility": s["credibility"]}
+            for s in sources
+        ],
+    }

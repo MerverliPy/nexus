@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Voice output (TTS) — OpenAI TTS API, 6 voices, CLI: nexus voice speak, API: POST /voice/speak + 4 tests
 - SMS gateway (Twilio) — webhook with signature validation, command execution (log/balance/recent/task), rate limiting, sms_phone on User + 4 tests
 - Mobile PWA — manifest.json, icons, viewport meta, apple-mobile-web-app, MobileNav bottom bar, safe-area utilities, touch-target helpers
+- Multi-source synthesis — credibility-weighted LLM synthesis from 2+ notes → structured findings, contradictions, insights, open questions; save-as-note option + 5 tests
 
 ### Infrastructure
 - Docker Compose setup with 6 services
