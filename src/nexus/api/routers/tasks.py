@@ -13,6 +13,7 @@ from nexus.models.task import Task
 from nexus.models.user import User
 from nexus.utils.dependencies import get_current_user
 from nexus.utils.recurrence import next_occurrence
+from nexus.services.scheduling import detect_conflicts, parse_nl_date, suggest_free_slots
 
 router = APIRouter(prefix="/api/v1/tasks", tags=["tasks"])
 
@@ -96,6 +97,63 @@ async def list_tasks(
     query = query.order_by(Task.priority.desc(), Task.due_date.asc().nullslast())
     result = await db.execute(query)
     return result.scalars().all()
+
+
+# ── Smart scheduling ───────────────────────────────────────────────────
+
+
+@router.get("/suggest-time")
+async def suggest_time(
+    text: str = Query(..., description="Natural language date/time text"),
+):
+    """Parse natural language into a datetime.
+
+    Example: 'tomorrow 3pm' → 2026-07-12T15:00:00
+    """
+    result = parse_nl_date(text)
+    if result is None:
+        raise HTTPException(status_code=400, detail=f"Could not parse: {text}")
+    return {"text": text, "datetime": result.isoformat()}
+
+
+@router.get("/suggest-slot")
+async def suggest_slot(
+    date: str | None = Query(None, description="Date to find slots on (YYYY-MM-DD, or NL like 'tomorrow')"),
+    count: int = Query(3, ge=1, le=10),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Suggest free time slots for scheduling a new task."""
+    target_date: datetime | None = None
+    if date:
+        parsed = parse_nl_date(date)
+        if parsed is None:
+            raise HTTPException(status_code=400, detail=f"Could not parse date: {date}")
+        target_date = parsed
+
+    slots = await suggest_free_slots(user.id, db, date=target_date, count=count)
+    return {"slots": slots, "count": len(slots)}
+
+
+@router.get("/{task_id}/conflicts")
+async def task_conflicts(
+    task_id: int,
+    window_minutes: int = Query(60, ge=15, le=480),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Detect tasks that conflict with this task's due date/time."""
+    result = await db.execute(select(Task).where(Task.id == task_id, Task.user_id == user.id))
+    task = result.scalar_one_or_none()
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if task.due_date is None:
+        return {"task_id": task_id, "conflicts": [], "detail": "Task has no due date"}
+
+    conflicts = await detect_conflicts(
+        task_id, task.due_date, user.id, db, window_minutes=window_minutes
+    )
+    return {"task_id": task_id, "conflicts": conflicts, "window_minutes": window_minutes}
 
 
 @router.get("/{task_id}", response_model=TaskResponse)

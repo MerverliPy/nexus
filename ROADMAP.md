@@ -28,7 +28,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 
 | Phase | Status | Summary |
 |-------|--------|---------|
-| **1 — Foundation** | ✅ ~95% | Infra, JWT auth, tasks, Next.js web, WebSocket live. Celery worker now generates recurring task instances. |
+| **1 — Foundation** | ✅ 100% | Infra, JWT auth, tasks, Next.js web, WebSocket live, recurring tasks, smart scheduling — all done. |
 | **2 — Finance** | ✅ 100% | CRUD, CSV import, analytics, OCR, ML categorization, accuracy tracking, vendor normalization — all done. |
 | **3 — Security/Prod** | ✅ 100% | MFA, encryption, audit logging, session mgmt, Prometheus, backups, systemd, circuit breakers, LLM cost tracking — all done. |
 | **4 — Research** | ✅ 100% | Notes, wiki-links, hybrid search, arXiv, credibility scoring, LLM plans, export, git versioning, multi-source synthesis — all done. |
@@ -105,7 +105,7 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 - [x] Next.js web dashboard (task list, create, complete)
 - [x] Real-time updates via WebSocket *(ws.py + ws_manager.py)*
 - [x] Recurring tasks (RRULE format) *(recurrence.py + Celery generate_recurring_tasks task, hourly beat schedule; tested)*
-- [~] Task dependencies and smart scheduling *(dependencies.py util exists; smart scheduling not wired)*
+- [x] Task dependencies and smart scheduling *(NL date parsing via dateparser, conflict detection, free slot suggestions; 3 API endpoints + 12 tests)*
 
 #### Tasks
 1. **Next.js setup** (6h)
@@ -605,12 +605,12 @@ This roadmap breaks the Nexus project into 5 concrete phases, each building on t
 
 | Phase | Weeks | Effort (hours) | Status | Key Deliverables |
 |-------|-------|----------------|--------|------------------|
-| **Phase 1** | 1-4 | 60 | ✅ ~95% | Infrastructure, Task Management (CLI + Web) |
+| **Phase 1** | 1-4 | 60 | ✅ 100% | Infrastructure, Task Management (CLI + Web) |
 | **Phase 2** | 5-8 | 76 | ✅ 100% | Financial Intelligence (Transactions, OCR, ML, vendor norm.) |
 | **Phase 3** | 9-12 | 64 | ✅ 100% | Security & Production (MFA, Monitoring, Backups) |
 | **Phase 4** | 13-16 | 76 | ✅ 100% | Research & Knowledge (Wiki, Semantic Search, synthesis) |
 | **Phase 5** | 17-20 | 68 | ✅ 100% | Advanced Features (Voice, SMS, PWA) |
-| **Total** | 20 | **344** | ✅ ~95% | Full-featured Personal AI System |
+| **Total** | 20 | **344** | ✅ 100% | Full-featured Personal AI System |
 
 *Note: Total is less than 480 due to removing optional tasks (LayoutLM, advanced features). Buffer of 136 hours for debugging, refactoring, and unexpected issues.*
 

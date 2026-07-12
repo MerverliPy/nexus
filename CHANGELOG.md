@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SMS gateway (Twilio) — webhook with signature validation, command execution (log/balance/recent/task), rate limiting, sms_phone on User + 4 tests
 - Mobile PWA — manifest.json, icons, viewport meta, apple-mobile-web-app, MobileNav bottom bar, safe-area utilities, touch-target helpers
 - Multi-source synthesis — credibility-weighted LLM synthesis from 2+ notes → structured findings, contradictions, insights, open questions; save-as-note option + 5 tests
+- Smart scheduling — NL date parsing (dateparser), conflict detection (60-min window), free slot suggestions (8am-8pm gaps); 3 API endpoints + 12 tests
 
 ### Infrastructure
 - Docker Compose setup with 6 services
