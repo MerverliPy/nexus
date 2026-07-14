@@ -31,6 +31,25 @@ export interface Task {
   updated_at: string;
 }
 
+export interface Note {
+  id: number;
+  title: string;
+  content: string;
+  project_id: number | null;
+  tags: string[] | null;
+  source_url: string | null;
+  source_type: string | null;
+  has_embedding: boolean;
+}
+
+export interface SearchResult {
+  id: number;
+  title: string;
+  snippet: string;
+  score: number;
+  method: string;
+}
+
 function getTokens(): { access: string | null; refresh: string | null } {
   if (typeof window === "undefined") return { access: null, refresh: null };
   return {
@@ -149,6 +168,48 @@ export const api = {
   storeTokens,
   clearTokens,
   getTokens,
+  getAPIBase: () => API_BASE,
+
+  // Notes
+  listNotes: () =>
+    request<Note[]>("/api/v1/research/notes"),
+
+  getNote: (id: number) =>
+    request<Note>(`/api/v1/research/notes/${id}`),
+
+  createNote: (data: {
+    title: string;
+    content: string;
+    tags?: string[];
+  }) =>
+    request<Note>("/api/v1/research/notes", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  updateNote: (id: number, data: {
+    title?: string;
+    content?: string;
+    tags?: string[];
+  }) =>
+    request<Note>(`/api/v1/research/notes/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  deleteNote: (id: number) =>
+    fetch(`${API_BASE}/api/v1/research/notes/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${getTokens().access}` },
+    }).then((r) => {
+      if (!r.ok && r.status !== 204) throw new ApiError("Delete failed", r.status);
+    }),
+
+  searchNotes: (query: string) =>
+    request<SearchResult[]>("/api/v1/research/notes/search", {
+      method: "POST",
+      body: JSON.stringify({ query, limit: 20 }),
+    }),
 
   // Finance
   createTransaction: (data: {
