@@ -68,6 +68,11 @@ class Settings(BaseSettings):
     nexus_debug: bool = True
     nexus_log_level: str = "INFO"
 
+    # API Server
+    nexus_api_host: str = "0.0.0.0"
+    nexus_api_port: int = 8000
+    nexus_cors_origins: str = "http://localhost:3000,http://localhost:8000"
+
     @property
     def database_url(self) -> str:
         """Construct database URL."""

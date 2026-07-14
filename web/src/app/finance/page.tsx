@@ -64,7 +64,7 @@ export default function FinancePage() {
 
   const loadAccounts = async () => {
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/finance/accounts`, {
+      const res = await fetch(`${API_BASE}/api/v1/finance/accounts`, {
         headers: { Authorization: `Bearer ${api.getTokens().access}` },
       });
       if (res.ok) setAccounts(await res.json());
@@ -77,7 +77,7 @@ export default function FinancePage() {
       if (category) params.set("category", category);
       params.set("limit", "50");
       const res = await fetch(
-        `http://localhost:8000/api/v1/finance/transactions?${params}`,
+        `${API_BASE}/api/v1/finance/transactions?${params}`,
         { headers: { Authorization: `Bearer ${api.getTokens().access}` } }
       );
       if (res.ok) setTransactions(await res.json());
@@ -88,13 +88,13 @@ export default function FinancePage() {
     try {
       const token = api.getTokens().access;
       const catRes = await fetch(
-        "http://localhost:8000/api/v1/finance/analytics/spending-by-category",
+        `${API_BASE}/api/v1/finance/analytics/spending-by-category`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (catRes.ok) setSpending(await catRes.json());
 
       const monRes = await fetch(
-        "http://localhost:8000/api/v1/finance/analytics/monthly-totals",
+        `${API_BASE}/api/v1/finance/analytics/monthly-totals`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (monRes.ok) {
