@@ -105,10 +105,12 @@ async function request<T>(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new ApiError(
-      body.detail || `Request failed with status ${res.status}`,
-      res.status
-    );
+    const message = Array.isArray(body.detail)
+      ? body.detail.map((e: { msg: string; loc?: string[] }) =>
+          `${e.loc ? e.loc.join(".") + ": " : ""}${e.msg}`
+        ).join("; ")
+      : body.detail || `Request failed with status ${res.status}`;
+    throw new ApiError(message, res.status);
   }
 
   return res.json();

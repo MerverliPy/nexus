@@ -88,6 +88,7 @@ export default function DashboardPage() {
   const [dueDate, setDueDate] = useState("");
   const [recurrence, setRecurrence] = useState("");
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState("");
 
   useEffect(() => {
     if (!loading && !user) {
@@ -115,7 +116,7 @@ export default function DashboardPage() {
         title,
         description: description || undefined,
         priority: parseInt(priority),
-        due_date: dueDate || null,
+        due_date: dueDate && /^\d{4}-\d{2}-\d{2}(T|\s)/.test(dueDate) ? dueDate : null,
         recurrence_rule: recurrence || null,
       });
       setTitle("");
@@ -124,8 +125,10 @@ export default function DashboardPage() {
       setDueDate("");
       setRecurrence("");
       setCreateOpen(false);
+      setCreateError("");
       await refreshTasks(filter === "all" ? undefined : filter);
     } catch (err) {
+      setCreateError(err instanceof Error ? err.message : String(err));
       console.error("Create failed", err);
     } finally {
       setCreating(false);
@@ -182,7 +185,7 @@ export default function DashboardPage() {
                 {tasks.filter((t) => t.status === "pending").length} pending
               </CardDescription>
             </div>
-            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <Dialog open={createOpen} onOpenChange={(open) => { setCreateOpen(open); if (!open) setCreateError(""); }}>
               <DialogTrigger render={<Button>New Task</Button>} />
               <DialogContent>
                 <form onSubmit={handleCreate}>
@@ -192,6 +195,11 @@ export default function DashboardPage() {
                       Add a new task to your list.
                     </DialogDescription>
                   </DialogHeader>
+                  {createError && (
+                    <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+                      {createError}
+                    </div>
+                  )}
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
                       <label htmlFor="title" className="text-sm font-medium">
@@ -240,7 +248,7 @@ export default function DashboardPage() {
                         id="dueDate"
                         value={dueDate}
                         onChange={(e) => setDueDate(e.target.value)}
-                        placeholder="tomorrow, next monday, jul 15…"
+                        placeholder="2026-07-31 or YYYY-MM-DD HH:MM"
                       />
                     </div>
                     <div className="space-y-2">
