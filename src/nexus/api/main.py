@@ -21,6 +21,7 @@ from nexus.api.routers import (
 from nexus.config import get_settings
 from nexus.database import Base, engine
 from nexus.utils.metrics import PrometheusMiddleware, metrics_endpoint
+from sqlalchemy import text
 
 settings = get_settings()
 logger = structlog.get_logger()
@@ -67,8 +68,18 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    # TODO: Add database connectivity check
-    return {"status": "healthy", "env": settings.nexus_env}
+    """Health check with database connectivity verification."""
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        db_status = "connected"
+    except Exception:
+        db_status = "disconnected"
+    return {
+        "status": "healthy" if db_status == "connected" else "degraded",
+        "env": settings.nexus_env,
+        "database": db_status,
+    }
 
 
 @app.get("/metrics")

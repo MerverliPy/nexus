@@ -73,6 +73,11 @@ class Settings(BaseSettings):
     nexus_api_port: int = 8000
     nexus_cors_origins: str = "http://localhost:3000,http://localhost:8000"
 
+    # Rate Limiting
+    nexus_rate_limit_auth: int = 5
+    nexus_rate_limit_api: int = 60
+    nexus_rate_limit_window: int = 60  # seconds
+
     @property
     def database_url(self) -> str:
         """Construct database URL."""

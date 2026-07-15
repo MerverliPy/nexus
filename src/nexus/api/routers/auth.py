@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from nexus.database import get_db
 from nexus.models.user import User
 from nexus.services.audit import log as audit_log  # noqa: N811
+from nexus.config import get_settings
 from nexus.services.sessions import (
     create_session,
     list_sessions,
@@ -143,6 +144,17 @@ def _capture(request: Request) -> tuple[str | None, str | None]:
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register(request: Request, body: RegisterRequest, db: AsyncSession = Depends(get_db)):
     """Register a new user account."""
+    ip = request.client.host if request.client else "unknown"
+    rl_key = f"register:{ip}"
+    allowed, retry_after = await ratelimit.hit(
+        rl_key, limit=get_settings().nexus_rate_limit_auth, window_seconds=get_settings().nexus_rate_limit_window
+    )
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many registration attempts. Try again later.",
+            headers={"Retry-After": str(retry_after)},
+        )
     result = await db.execute(select(User).where(User.email == body.email))
     if result.scalar_one_or_none() is not None:
         raise HTTPException(

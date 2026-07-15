@@ -3,13 +3,13 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Tests: 163 passing](https://img.shields.io/badge/tests-163%20passing-brightgreen.svg)](tests/)
+[![Tests: 162 passing](https://img.shields.io/badge/tests-162%20passing-brightgreen.svg)](tests/)
 
 > **Your autonomous intelligence platform for tasks, finance, and research — self-hosted, privacy-first, production-ready.**
 
 Nexus is a comprehensive AI assistant that unifies **task management**, **financial intelligence**, and **research workflows** into a single, privacy-first system. Built for technical users who value data sovereignty, production-grade reliability, and extensibility.
 
-**Status: All 5 phases complete ✅ | 163 tests passing | 61% coverage**
+**Status: All 5 phases complete ✅ | 162 tests passing + 1 skipped | 60% coverage**
 
 ---
 
