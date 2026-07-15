@@ -456,7 +456,7 @@ async def list_projects(
 # ── Research workflow ──────────────────────────────────────────────────────
 
 
-@router.post("/research/plan", response_model=ResearchPlanResponse)
+@router.post("/plan", response_model=ResearchPlanResponse)
 async def plan_research(body: ResearchPlanRequest):
     """Generate research questions for a topic (LLM-powered when available)."""
     from nexus.config import get_settings
@@ -475,7 +475,7 @@ async def plan_research(body: ResearchPlanRequest):
     return ResearchPlanResponse(topic=body.topic, questions=questions)
 
 
-@router.get("/research/papers", response_model=list[ArxivPaper])
+@router.get("/papers", response_model=list[ArxivPaper])
 async def search_papers(
     q: str = Query(..., description="Search query"),
     limit: int = Query(10, ge=1, le=50),
@@ -492,7 +492,7 @@ async def search_papers(
     return scored
 
 
-@router.post("/research/synthesize")
+@router.post("/synthesize")
 async def synthesize_research(
     body: dict,
     user: User = Depends(get_current_user),

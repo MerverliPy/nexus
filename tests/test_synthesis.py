@@ -71,7 +71,7 @@ async def test_synthesize_sorts_by_credibility(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_synthesize_endpoint_requires_auth(client):
     response = await client.post(
-        "/api/v1/research/research/synthesize",
+        "/api/v1/research/synthesize",
         json={"note_ids": [1, 2]},
     )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -80,7 +80,7 @@ async def test_synthesize_endpoint_requires_auth(client):
 @pytest.mark.asyncio
 async def test_synthesize_endpoint_requires_min_two_notes(client):
     response = await client.post(
-        "/api/v1/research/research/synthesize",
+        "/api/v1/research/synthesize",
         json={"note_ids": [1]},
     )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED

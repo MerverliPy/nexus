@@ -129,7 +129,7 @@ async def test_export_note_pdf_requires_pandoc(client: AsyncClient):
 async def test_research_plan_no_llm_key_returns_503(client: AsyncClient):
     headers = await _register_and_auth(client, "plan-test@example.com")
     resp = await client.post(
-        "/api/v1/research/research/plan",
+        "/api/v1/research/plan",
         json={"topic": "investment strategy"},
         headers=headers,
     )
