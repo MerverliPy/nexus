@@ -50,6 +50,94 @@ export interface SearchResult {
   method: string;
 }
 
+// Notifications
+export interface Notification {
+  id: number;
+  title: string;
+  body: string | null;
+  priority: string;
+  channel: string;
+  status: string;
+  created_at: string | null;
+}
+
+export interface NotificationPreferences {
+  digest_hour: number;
+  urgent_immediate: boolean;
+  bundle_normal: boolean;
+  telegram_chat_id: string | null;
+}
+
+export interface DigestResponse {
+  bundled: number;
+  sent: boolean;
+}
+
+// Portfolio
+export interface Portfolio {
+  id: number;
+  name: string;
+  target_allocation: Record<string, number> | null;
+}
+
+export interface HoldingData {
+  id: number;
+  ticker: string;
+  quantity: number;
+  cost_basis: number;
+  asset_class: string;
+}
+
+export interface HoldingAnalytics {
+  id: number;
+  ticker: string;
+  asset_class: string;
+  quantity: number;
+  cost_basis: number;
+  current_price: number;
+  market_value: number;
+  total_cost: number;
+  gain_loss: number;
+  gain_loss_pct: number;
+  price_is_live: boolean;
+}
+
+export interface PortfolioAnalytics {
+  portfolio_id: number;
+  name: string;
+  total_value: number;
+  total_cost: number;
+  total_gain_loss: number;
+  total_gain_loss_pct: number;
+  allocation: Record<string, number>;
+  target_allocation: Record<string, number>;
+  holdings: HoldingAnalytics[];
+}
+
+export interface RebalanceRecommendation {
+  portfolio_id: number;
+  total_value: number;
+  recommendations: {
+    asset_class: string;
+    current_pct: number;
+    target_pct: number;
+    drift_pct: number;
+    action: string;
+    amount: number;
+  }[];
+}
+
+export interface NetWorth {
+  total_assets: number;
+  total_liabilities: number;
+  net_worth: number;
+  breakdown: {
+    cash_accounts: number;
+    portfolio: number;
+    liabilities: number;
+  };
+}
+
 function getTokens(): { access: string | null; refresh: string | null } {
   if (typeof window === "undefined") return { access: null, refresh: null };
   return {
@@ -232,4 +320,68 @@ export const api = {
       method: "DELETE",
       headers: { Authorization: `Bearer ${getTokens().access}` },
     }).then((r) => { if (!r.ok && r.status !== 204) throw new ApiError("Delete failed", r.status); }),
+
+  // Notifications
+  listNotifications: (statusFilter?: string) =>
+    request<Notification[]>(`/api/v1/notifications${statusFilter ? `?status_filter=${statusFilter}` : ""}`),
+
+  createNotification: (data: { title: string; body?: string; priority?: string; channel?: string }) =>
+    request<Notification>("/api/v1/notifications", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  triggerDigest: (priority?: string) =>
+    request<DigestResponse>(`/api/v1/notifications/digest${priority ? `?priority=${priority}` : ""}`, {
+      method: "POST",
+    }),
+
+  getPreferences: () =>
+    request<NotificationPreferences>("/api/v1/notifications/preferences"),
+
+  updatePreferences: (data: {
+    digest_hour?: number;
+    urgent_immediate?: boolean;
+    bundle_normal?: boolean;
+    telegram_chat_id?: string | null;
+  }) =>
+    request<NotificationPreferences>("/api/v1/notifications/preferences", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  // Portfolio
+  listPortfolios: () =>
+    request<Portfolio[]>("/api/v1/portfolio"),
+
+  getPortfolioAnalytics: (id: number) =>
+    request<PortfolioAnalytics>(`/api/v1/portfolio/${id}/analytics`),
+
+  getPortfolioRebalance: (id: number) =>
+    request<RebalanceRecommendation>(`/api/v1/portfolio/${id}/rebalance`),
+
+  addHolding: (data: {
+    portfolio_id: number;
+    ticker: string;
+    quantity: number;
+    cost_basis: number;
+    asset_class?: string;
+    last_price?: number | null;
+  }) =>
+    request<HoldingData>("/api/v1/portfolio/holdings", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  deleteHolding: (id: number) =>
+    fetch(`${API_BASE}/api/v1/portfolio/holdings/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${getTokens().access}` },
+    }).then((r) => { if (!r.ok && r.status !== 204) throw new ApiError("Delete failed", r.status); }),
+
+  getNetWorth: () =>
+    request<NetWorth>("/api/v1/portfolio/networth/current"),
+
+  createNetWorthSnapshot: () =>
+    request<NetWorth>("/api/v1/portfolio/networth/snapshot", { method: "POST" }),
 };
